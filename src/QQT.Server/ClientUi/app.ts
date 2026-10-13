@@ -1,11 +1,11 @@
 export {};
 
 type Position = { x: number; y: number };
-type Player = { id: number; position: Position; hit: boolean };
+type Player = { id: number; position: Position; hit: boolean; alive: boolean; deathTick: number | null };
 type Bubble = { id: number; ownerId: number; position: Position; dueAt: number };
 type Move = { playerId: number; from: Position; to: Position };
-type GameEvent = { sequence: number; kind: string; tick: number; playerId: number; bubbleId: number; position: Position; from: Position; success: boolean };
-type Frame = { type: "frame"; runId: string; status: string; error: string; tick: number; size: number; durationMs: number; animate: boolean; terrain: number[]; players: Player[]; bubbles: Bubble[]; moves: Move[]; events: GameEvent[]; crateCount: number; bubbleCount: number; result?: { passed: boolean; safePlayers: number; walls: number; placed: number; exploded: number; destroyed: number; mapMatches: boolean } };
+type GameEvent = { sequence: number; kind: string; tick: number; playerId: number; bubbleId: number; position: Position; from: Position; success: boolean; value: number; reason: string };
+type Frame = { type: "frame"; runId: string; name: string; totalTicks: number; status: string; error: string; tick: number; size: number; durationMs: number; animate: boolean; terrain: number[]; players: Player[]; bubbles: Bubble[]; moves: Move[]; events: GameEvent[]; crateCount: number; bubbleCount: number; result?: { passed: boolean; safePlayers: number; walls: number; placed: number; exploded: number; destroyed: number; mapMatches: boolean; deadPlayers: number; deaths: number } };
 
 function element<T extends HTMLElement>(id: string): T { return document.getElementById(id) as T; }
 const canvas = element<HTMLCanvasElement>("map");
@@ -14,6 +14,9 @@ const start = element<HTMLButtonElement>("start");
 const connection = element("connection");
 const status = element("status");
 const tick = element("tick");
+const totalTicks = element("total-ticks");
+const scenarioTitle = element("scenario-title");
+const scenarioFooter = element("scenario-footer");
 const progress = element("progress");
 const bubbles = element("bubbles");
 const crates = element("crates");
@@ -41,7 +44,9 @@ function eventText(e: GameEvent): string {
     case "exploded": return `泡泡 #${e.bubbleId} 在 ${gridName(e.position)} 爆炸`;
     case "crateDestroyed": return `${gridName(e.position)} 箱子销毁`;
     case "safety": return `玩家 ${e.playerId} 在 ${gridName(e.position)}：${e.success ? "安全" : "受击"}`;
-    default: return `玩家 ${e.playerId} 在 ${gridName(e.position)} 放置失败`;
+    case "death": return `玩家 ${e.playerId} 在 ${gridName(e.position)} 死亡，保留 ${e.value} 颗在场泡泡`;
+    case "actionIgnored": return `玩家 ${e.playerId} 已死亡，第 ${e.value} 轮动作已忽略`;
+    default: return `玩家 ${e.playerId} 在 ${gridName(e.position)} 放置${e.reason === "dead" ? "取消：已死亡" : "失败"}`;
   }
 }
 
@@ -50,25 +55,28 @@ function applyFrame(frame: Frame, now: number): void {
   if (newRun) { loggedSequence = 0; log.replaceChildren(); flashStart = -10000; }
   current = frame;
   tick.textContent = String(frame.tick);
-  progress.style.width = `${frame.tick * 25}%`;
+  totalTicks.textContent = frame.totalTicks > 0 ? String(frame.totalTicks) : "—";
+  scenarioTitle.textContent = frame.name;
+  scenarioFooter.textContent = frame.totalTicks > 0 ? `M0 · ${frame.totalTicks} 轮脚本` : "M0 · 预设脚本";
+  progress.style.width = `${frame.totalTicks > 0 ? frame.tick / frame.totalTicks * 100 : 0}%`;
   bubbles.textContent = String(frame.bubbleCount);
   crates.textContent = String(frame.crateCount);
   let safeCount = 0;
   players.replaceChildren();
   for (const p of frame.players) {
-    if (!p.hit) safeCount++;
+    if (p.alive) safeCount++;
     const row = document.createElement("div"); row.className = "player";
     const dot = document.createElement("i"); dot.className = "player-dot"; dot.style.background = colors[p.id - 1];
-    row.append(dot, `P${p.id} · ${gridName(p.position)}${p.hit ? " · 受击" : ""}`); players.append(row);
+    row.append(dot, `P${p.id} · ${gridName(p.position)}${p.alive ? "" : ` · 已死亡 t=${p.deathTick}`}`); players.append(row);
   }
   safe.textContent = String(safeCount);
   status.textContent = frame.status === "running" ? "验证进行中" : frame.status === "passed" ? "验证通过" : frame.status === "failed" ? "验证失败" : frame.status === "error" ? "运行错误" : "准备就绪";
   result.className = "result";
   if (frame.status === "passed") {
-    result.textContent = "验证通过：四人安全，4 颗泡泡已爆炸，4 个指定箱子已销毁。"; result.classList.add("success");
+    result.textContent = `验证通过：存活 ${frame.result!.safePlayers} 人，死亡 ${frame.result!.deadPlayers} 人，${frame.result!.exploded} 颗泡泡已爆炸，${frame.result!.destroyed} 个指定箱子已销毁。`; result.classList.add("success");
   } else if (frame.status === "failed" || frame.status === "error") {
     result.textContent = frame.error || "验证失败：请查看位置、计时和服务端日志。"; result.classList.add("failure");
-  } else result.textContent = "四轮后核对：泡泡 0 · 箱子 325 · 四人安全";
+  } else result.textContent = "运行后按脚本预期核对位置、死亡时刻和泡泡处理。";
   for (const e of frame.events) {
     if (e.sequence <= loggedSequence) continue;
     if (e.kind === "exploded" && e.tick === frame.tick && !newRun) flashStart = now;
@@ -163,6 +171,11 @@ function draw(now: number): void {
       context.fillStyle = p.hit ? "#6b7378" : colors[p.id - 1];
       context.beginPath(); context.arc(px, py, cell * .31, 0, Math.PI * 2); context.fill();
       context.font = `700 ${cell * .34}px sans-serif`; context.fillStyle = "#172a31"; context.fillText(String(p.id), px, py);
+      if (!p.alive) {
+        context.strokeStyle = "#efb3ac"; context.lineWidth = Math.max(1.5, cell * .06);
+        context.beginPath(); context.moveTo(px - cell * .23, py - cell * .23); context.lineTo(px + cell * .23, py + cell * .23);
+        context.moveTo(px + cell * .23, py - cell * .23); context.lineTo(px - cell * .23, py + cell * .23); context.stroke();
+      }
     }
     const flash = 1 - (now - flashStart) / 650;
     if (flash > 0) for (const e of current.events) if (e.kind === "covered" && e.tick === current.tick) {

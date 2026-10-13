@@ -17,6 +17,7 @@
 - `QQT.Simulation.Tick.Bubble`：放置、到期与移除。
 - `QQT.Simulation.Tick.Explosion`：覆盖、连锁与受击。
 - `QQT.Simulation.Tick.Map`：箱子销毁和地图变化。
+- `QQT.Simulation.Tick.Death`：死亡、同刻放置取消和死亡后的动作忽略。
 - `QQT.Simulation.Tick.Item`：道具露出、销毁、拾取与属性生效。
 - `QQT.Transport.Ai`、`QQT.Transport.Ui`：各自的连接和消息处理。
 

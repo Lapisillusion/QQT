@@ -3,31 +3,39 @@ using System.Text.Json;
 
 namespace QQT.Core;
 
-/// <summary>仅解析 M0 的四轮四人计划；数组所有权由脚本持有，运行结束归还。</summary>
+/// <summary>有限轮次的四人验证脚本；计划和 JSON 预期由本对象持有并在运行结束归还。</summary>
 public sealed class ScenarioScript : IDisposable
 {
     private PlayerAction[]? _actions;
+    private JsonDocument? _document;
     public string Name { get; private set; } = "M0";
-    public int TotalTicks => 4;
+    public int TotalTicks { get; }
+    public JsonElement Expected => _document?.RootElement.GetProperty("expected") ?? throw new ObjectDisposedException(nameof(ScenarioScript));
 
-    private ScenarioScript() => _actions = ArrayPool<PlayerAction>.Shared.Rent(16);
-
-    public static ScenarioScript Load(string path)
+    private ScenarioScript(int totalTicks)
     {
-        var script = new ScenarioScript();
+        TotalTicks = totalTicks;
+        _actions = ArrayPool<PlayerAction>.Shared.Rent(totalTicks * 4);
+    }
+
+    public static ScenarioScript Load(string path, int maxTicks)
+    {
+        using var stream = File.OpenRead(path);
+        var document = JsonDocument.Parse(stream);
+        ScenarioScript? script = null;
         try
         {
-            script._actions!.AsSpan(0, 16).Clear();
-            using var stream = File.OpenRead(path);
-            using var document = JsonDocument.Parse(stream);
             var root = document.RootElement;
+            int totalTicks = root.GetProperty("totalTicks").GetInt32();
+            if (totalTicks < 1 || totalTicks > maxTicks)
+                throw new InvalidDataException($"脚本轮数必须在 1~{maxTicks} 之间。");
+            script = new ScenarioScript(totalTicks) { _document = document };
+            script._actions!.AsSpan(0, totalTicks * 4).Clear();
             script.Name = root.GetProperty("name").GetString() ?? "M0";
-            if (root.GetProperty("totalTicks").GetInt32() != 4)
-                throw new InvalidDataException("M0 脚本必须明确执行四轮。");
             var rounds = root.GetProperty("rounds");
-            if (rounds.GetArrayLength() != 4)
-                throw new InvalidDataException("M0 脚本必须包含四轮。");
-            for (int r = 0; r < 4; r++)
+            if (rounds.GetArrayLength() != totalTicks)
+                throw new InvalidDataException("脚本轮数与 totalTicks 不一致。");
+            for (int r = 0; r < totalTicks; r++)
             {
                 var round = rounds[r];
                 if (round.GetProperty("roundId").GetInt32() != r + 1)
@@ -51,29 +59,61 @@ public sealed class ScenarioScript : IDisposable
                     if (placements.GetArrayLength() > 1)
                         throw new InvalidDataException("M0 每次动作最多选择一个放置点。");
                     Position? placement = null;
-                    if (placements.GetArrayLength() == 1)
-                    {
-                        var point = placements[0];
-                        var position = new Position(point.GetProperty("x").GetInt32(), point.GetProperty("y").GetInt32());
-                        if (!position.InBounds) throw new InvalidDataException("放置坐标越界。");
-                        placement = position;
-                    }
+                    if (placements.GetArrayLength() == 1) placement = ReadPosition(placements[0]);
                     script._actions![r * 4 + id - 1] = new(id, direction, placement);
                 }
             }
+            script.CheckExpected();
             return script;
         }
         catch
         {
-            script.Dispose();
+            if (script is null) document.Dispose(); else script.Dispose();
             throw;
         }
+    }
+
+    private void CheckExpected()
+    {
+        var expected = Expected;
+        var players = expected.GetProperty("players");
+        if (players.GetArrayLength() != 4) throw new InvalidDataException("预期结果需要四个玩家，按编号排列。");
+        for (int i = 0; i < 4; i++)
+        {
+            var player = players[i];
+            if (player.GetProperty("playerId").GetInt32() != i + 1) throw new InvalidDataException("预期玩家必须按编号排列。");
+            ReadPosition(player.GetProperty("position"));
+            var death = player.GetProperty("deathTick");
+            if (death.ValueKind != JsonValueKind.Null && (death.GetInt32() < 1 || death.GetInt32() > TotalTicks))
+                throw new InvalidDataException("预期死亡时刻越界。");
+            if (player.GetProperty("ownedBubblesAtDeath").GetInt32() < 0) throw new InvalidDataException("死亡时泡泡数非法。");
+        }
+        int id = 0;
+        foreach (var bubble in expected.GetProperty("bubbles").EnumerateArray())
+        {
+            if (bubble.GetProperty("id").GetInt32() != ++id || id > TotalTicks * 4) throw new InvalidDataException("预期泡泡编号非法。");
+            int owner = bubble.GetProperty("ownerId").GetInt32();
+            if (owner is < 1 or > 4) throw new InvalidDataException("预期泡泡归属非法。");
+            ReadPosition(bubble.GetProperty("position"));
+            int placed = bubble.GetProperty("placedAt").GetInt32(), exploded = bubble.GetProperty("explodedAt").GetInt32();
+            if (placed < 0 || exploded < placed || exploded > TotalTicks) throw new InvalidDataException("预期泡泡时间非法。");
+        }
+        foreach (var point in expected.GetProperty("destroyedCrates").EnumerateArray()) ReadPosition(point);
+        if (expected.GetProperty("deadPlacementSkips").GetInt32() < 0 || expected.GetProperty("ignoredDeadActions").GetInt32() < 0)
+            throw new InvalidDataException("预期取消次数不能为负。");
+    }
+
+    internal static Position ReadPosition(JsonElement json)
+    {
+        var position = new Position(json.GetProperty("x").GetInt32(), json.GetProperty("y").GetInt32());
+        if (!position.InBounds) throw new InvalidDataException("坐标越界。");
+        return position;
     }
 
     public ReadOnlySpan<PlayerAction> Round(int tick)
     {
         ObjectDisposedException.ThrowIf(_actions is null, this);
-        if (tick is < 1 or > 4) throw new ArgumentOutOfRangeException(nameof(tick));
+        if (tick < 1 || tick > TotalTicks) throw new ArgumentOutOfRangeException(nameof(tick));
         return _actions.AsSpan((tick - 1) * 4, 4);
     }
 
@@ -81,5 +121,6 @@ public sealed class ScenarioScript : IDisposable
     {
         var buffer = Interlocked.Exchange(ref _actions, null);
         if (buffer is not null) ArrayPool<PlayerAction>.Shared.Return(buffer);
+        Interlocked.Exchange(ref _document, null)?.Dispose();
     }
 }

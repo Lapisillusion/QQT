@@ -26,5 +26,22 @@
       { "playerId": 3, "direction": "wait", "placements": [] },
       { "playerId": 4, "direction": "wait", "placements": [] }
     ]}
-  ]
+  ],
+  "expected": {
+    "players": [
+      { "playerId": 1, "position": { "x": 0, "y": 1 }, "deathTick": null, "ownedBubblesAtDeath": 0 },
+      { "playerId": 2, "position": { "x": 20, "y": 1 }, "deathTick": null, "ownedBubblesAtDeath": 0 },
+      { "playerId": 3, "position": { "x": 0, "y": 19 }, "deathTick": null, "ownedBubblesAtDeath": 0 },
+      { "playerId": 4, "position": { "x": 20, "y": 19 }, "deathTick": null, "ownedBubblesAtDeath": 0 }
+    ],
+    "bubbles": [
+      { "id": 1, "ownerId": 1, "position": { "x": 1, "y": 0 }, "placedAt": 1, "explodedAt": 4 },
+      { "id": 2, "ownerId": 2, "position": { "x": 19, "y": 0 }, "placedAt": 1, "explodedAt": 4 },
+      { "id": 3, "ownerId": 3, "position": { "x": 1, "y": 20 }, "placedAt": 1, "explodedAt": 4 },
+      { "id": 4, "ownerId": 4, "position": { "x": 19, "y": 20 }, "placedAt": 1, "explodedAt": 4 }
+    ],
+    "destroyedCrates": [{ "x": 2, "y": 0 }, { "x": 18, "y": 0 }, { "x": 2, "y": 20 }, { "x": 18, "y": 20 }],
+    "deadPlacementSkips": 0,
+    "ignoredDeadActions": 0
+  }
 }

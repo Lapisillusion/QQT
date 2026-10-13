@@ -1,6 +1,6 @@
 namespace QQT.Server;
 
-public sealed record ScenarioOptions(string ScriptPath, int TickIntervalMilliseconds, int AnimationMilliseconds, int ReceiveBufferBytes, int MessageBufferBytes, int MessagePoolRetained)
+public sealed record ScenarioOptions(string ScriptPath, int TickIntervalMilliseconds, int AnimationMilliseconds, int ReceiveBufferBytes, int MessageBufferBytes, int MessagePoolRetained, int MaxScriptTicks)
 {
     public static ScenarioOptions Load(IConfiguration config, string? scriptOverride)
     {
@@ -10,8 +10,9 @@ public sealed record ScenarioOptions(string ScriptPath, int TickIntervalMillisec
         int receive = Positive(config, "ReceiveBufferBytes");
         int message = Positive(config, "MessageBufferBytes");
         int retained = Positive(config, "MessagePoolRetained");
+        int maxTicks = Positive(config, "MaxScriptTicks");
         if (receive < 64 || receive > 65536) throw new InvalidDataException("UI 接收缓冲必须在 64~65536 字节之间。");
-        return new(Path.GetFullPath(script, AppContext.BaseDirectory), tick, animation, receive, message, retained);
+        return new(Path.GetFullPath(script, AppContext.BaseDirectory), tick, animation, receive, message, retained, maxTicks);
     }
     private static int Positive(IConfiguration config, string key)
     {

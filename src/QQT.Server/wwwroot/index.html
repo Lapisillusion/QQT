@@ -9,7 +9,7 @@
 <body>
   <main>
     <header>
-      <div><p class="eyebrow">QQT / SIMULATION LAB</p><h1>四角放泡泡验证</h1><p class="subtitle">移动到相邻格，放下泡泡，再撤到安全点。</p></div>
+      <div><p class="eyebrow">QQT / SIMULATION LAB</p><h1 id="scenario-title">M0 脚本验证</h1><p class="subtitle">执行预设动作，核对移动、泡泡与死亡处理。</p></div>
       <div class="actions"><span id="connection" class="connection">正在连接</span><button id="start" disabled>开始验证 <span>↗</span></button></div>
     </header>
     <section class="workspace">
@@ -21,10 +21,10 @@
       <aside>
         <section class="status-panel">
           <div class="panel-heading"><span>验证进度</span><span id="status" class="badge">准备就绪</span></div>
-          <div class="tick-line"><strong id="tick">0</strong><span>/ 4 tick</span></div>
+          <div class="tick-line"><strong id="tick">0</strong><span>/ <span id="total-ticks">—</span> tick</span></div>
           <div class="progress"><div id="progress"></div></div>
-          <div class="metrics"><div><strong id="bubbles">0</strong><span>在场泡泡</span></div><div><strong id="crates">329</strong><span>剩余箱子</span></div><div><strong id="safe">4</strong><span>安全玩家</span></div></div>
-          <p id="result" class="result">四轮后核对：泡泡 0 · 箱子 325 · 四人安全</p>
+          <div class="metrics"><div><strong id="bubbles">0</strong><span>在场泡泡</span></div><div><strong id="crates">329</strong><span>剩余箱子</span></div><div><strong id="safe">4</strong><span>存活玩家</span></div></div>
+          <p id="result" class="result">运行后按脚本预期核对位置、死亡时刻和泡泡处理。</p>
           <div id="players" class="players"></div>
         </section>
         <section class="log-panel">
@@ -33,7 +33,7 @@
         </section>
       </aside>
     </section>
-    <footer><span>M0 · 固定四轮脚本</span><span>1 格 / tick · 范围 1 · 泡泡寿命 3 tick</span></footer>
+    <footer><span id="scenario-footer">M0 · 预设脚本</span><span>1 格 / tick · 范围 1 · 泡泡寿命 3 tick</span></footer>
   </main>
   <script type="module" src="/app.js"></script>
 </body>
