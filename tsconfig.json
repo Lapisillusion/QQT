@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "strict": true,
+    "noEmitOnError": true,
+    "outDir": "src/QQT.Server/wwwroot",
+    "rootDir": "src/QQT.Server/ClientUi"
+  },
+  "include": ["src/QQT.Server/ClientUi/*.ts"]
+}

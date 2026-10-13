@@ -1,0 +1,6 @@
+{
+  "name": "qqt-m0",
+  "private": true,
+  "scripts": { "build:ui": "tsc -p tsconfig.json" },
+  "devDependencies": { "typescript": "5.9.3" }
+}

@@ -1,0 +1,30 @@
+{
+  "name": "四角放泡泡并撤离",
+  "totalTicks": 4,
+  "rounds": [
+    { "roundId": 1, "actions": [
+      { "playerId": 1, "direction": "right", "placements": [{ "x": 1, "y": 0 }] },
+      { "playerId": 2, "direction": "left", "placements": [{ "x": 19, "y": 0 }] },
+      { "playerId": 3, "direction": "right", "placements": [{ "x": 1, "y": 20 }] },
+      { "playerId": 4, "direction": "left", "placements": [{ "x": 19, "y": 20 }] }
+    ]},
+    { "roundId": 2, "actions": [
+      { "playerId": 1, "direction": "left", "placements": [] },
+      { "playerId": 2, "direction": "right", "placements": [] },
+      { "playerId": 3, "direction": "left", "placements": [] },
+      { "playerId": 4, "direction": "right", "placements": [] }
+    ]},
+    { "roundId": 3, "actions": [
+      { "playerId": 1, "direction": "down", "placements": [] },
+      { "playerId": 2, "direction": "down", "placements": [] },
+      { "playerId": 3, "direction": "up", "placements": [] },
+      { "playerId": 4, "direction": "up", "placements": [] }
+    ]},
+    { "roundId": 4, "actions": [
+      { "playerId": 1, "direction": "wait", "placements": [] },
+      { "playerId": 2, "direction": "wait", "placements": [] },
+      { "playerId": 3, "direction": "wait", "placements": [] },
+      { "playerId": 4, "direction": "wait", "placements": [] }
+    ]}
+  ]
+}

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QQT · M0 模拟验证</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main>
+    <header>
+      <div><p class="eyebrow">QQT / SIMULATION LAB</p><h1>四角放泡泡验证</h1><p class="subtitle">移动到相邻格，放下泡泡，再撤到安全点。</p></div>
+      <div class="actions"><span id="connection" class="connection">正在连接</span><button id="start" disabled>开始验证 <span>↗</span></button></div>
+    </header>
+    <section class="workspace">
+      <div class="board-panel">
+        <div class="panel-heading"><span><i class="live-dot"></i> 全局场景</span><span>21 × 21 · 固定地图</span></div>
+        <div class="canvas-wrap"><canvas id="map" aria-label="四人泡泡场景地图"></canvas></div>
+        <div class="legend"><span><i class="wall"></i>硬墙</span><span><i class="crate"></i>箱子</span><span><i class="bubble"></i>泡泡</span><span>角色上的数字为玩家编号</span></div>
+      </div>
+      <aside>
+        <section class="status-panel">
+          <div class="panel-heading"><span>验证进度</span><span id="status" class="badge">准备就绪</span></div>
+          <div class="tick-line"><strong id="tick">0</strong><span>/ 4 tick</span></div>
+          <div class="progress"><div id="progress"></div></div>
+          <div class="metrics"><div><strong id="bubbles">0</strong><span>在场泡泡</span></div><div><strong id="crates">329</strong><span>剩余箱子</span></div><div><strong id="safe">4</strong><span>安全玩家</span></div></div>
+          <p id="result" class="result">四轮后核对：泡泡 0 · 箱子 325 · 四人安全</p>
+          <div id="players" class="players"></div>
+        </section>
+        <section class="log-panel">
+          <div class="panel-heading"><span>事件日志</span><span id="event-count">0 条</span></div>
+          <div id="log" class="log" role="log"><p class="empty-log">开始验证后显示模拟事件。</p></div>
+        </section>
+      </aside>
+    </section>
+    <footer><span>M0 · 固定四轮脚本</span><span>1 格 / tick · 范围 1 · 泡泡寿命 3 tick</span></footer>
+  </main>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
