@@ -99,7 +99,7 @@ dotnet src/QQT.Server/bin/Debug/net10.0/QQT.Server.dll --verify --script scripts
 范围 1 的正式脚本无法区分射线被泡泡截断，以及胜者终点放置取消的错误。必要边界使用同一核心的合成夹具检查，不引入游戏参数修改或测试框架：
 
 ```powershell
-dotnet run --project checks/QQT.Core.Checks/QQT.Core.Checks.csproj -- E:/Project/Codex/QQT/scripts/m0-chain-victory.json
+dotnet run --project src/QQT.Core.Checks/QQT.Core.Checks.csproj -- E:/Project/Codex/QQT/scripts/m0-chain-victory.json
 ```
 
 输入路径须为绝对路径。检查范围 3 射线穿透、墙／箱子截断和旧地图、同格连锁去重、胜者放置取消、同批全灭平局、结束后推进拒绝及重置。实际日志、浏览器完整播放和重跑证据见 [连锁与即时获胜验收记录](docs/M0连锁与即时获胜验收记录.md)。

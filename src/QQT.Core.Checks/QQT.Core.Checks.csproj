@@ -1,4 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
-  <ItemGroup><ProjectReference Include="../../src/QQT.Core/QQT.Core.csproj" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="../QQT.Core/QQT.Core.csproj" /></ItemGroup>
 </Project>
