@@ -8,11 +8,12 @@ public sealed class GameSimulation : IDisposable
 {
     public const int Size = 21;
     public const int CellCount = Size * Size;
+    public const int MaxEventsPerTick = 96;
     private readonly Cell[] _terrain = ArrayPool<Cell>.Shared.Rent(CellCount);
     private readonly Player[] _players = ArrayPool<Player>.Shared.Rent(4);
     private readonly Bubble[] _bubbles = ArrayPool<Bubble>.Shared.Rent(12);
     private readonly Move[] _moves = ArrayPool<Move>.Shared.Rent(4);
-    private readonly SimulationEvent[] _events = ArrayPool<SimulationEvent>.Shared.Rent(96);
+    private readonly SimulationEvent[] _events = ArrayPool<SimulationEvent>.Shared.Rent(MaxEventsPerTick);
     private int _eventCount, _moveCount, _bubbleCount, _nextBubbleId, _placed, _exploded, _destroyed;
     private bool _disposed;
     public const int ExplosionRange = 1;
@@ -258,7 +259,7 @@ public sealed class GameSimulation : IDisposable
 
     private void Add(SimulationEvent item)
     {
-        if (_eventCount >= 96) throw new InvalidOperationException("M0 事件缓冲超出场景容量。");
+        if (_eventCount >= MaxEventsPerTick) throw new InvalidOperationException("M0 事件缓冲超出场景容量。");
         _events[_eventCount++] = item;
     }
 

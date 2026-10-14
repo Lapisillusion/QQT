@@ -1,0 +1,846 @@
+{
+  "name": "四人各清一条外边，完成后玩家 1、2、4 自爆，玩家 3 获胜",
+  "notes": [
+    "P1：上边 A1→U1；P2：右边 U1→U21；P3：左边 A21→A1；P4：下边 U21→A21。",
+    "固定速度 1、范围 1、寿命 3；t=100 清完外边 68 个箱子，同时波及内侧 32 个箱子；t=105 到达各边终点。",
+    "第 106 轮起点（t=105）玩家 1、2、4 放置自爆泡泡，原地等待至 t=108；玩家 3 在 A1 存活并获胜。",
+    "预期放置与引爆均为 71，最终箱子 229、硬墙 100、泡泡 0。常规入口 MaxScriptTicks 需至少 108；默认上限已扩展到 128，事件历史按允许轮数和单轮上界预留。"
+  ],
+  "totalTicks": 108,
+  "rounds": [
+    { "roundId": 1, "actions": [
+      {"playerId": 1, "direction": "right", "placements": [{"x": 1, "y": 0}]},
+      {"playerId": 2, "direction": "down", "placements": [{"x": 20, "y": 1}]},
+      {"playerId": 3, "direction": "up", "placements": [{"x": 0, "y": 19}]},
+      {"playerId": 4, "direction": "left", "placements": [{"x": 19, "y": 20}]}
+    ]},
+    { "roundId": 2, "actions": [
+      {"playerId": 1, "direction": "left", "placements": []},
+      {"playerId": 2, "direction": "up", "placements": []},
+      {"playerId": 3, "direction": "down", "placements": []},
+      {"playerId": 4, "direction": "right", "placements": []}
+    ]},
+    { "roundId": 3, "actions": [
+      {"playerId": 1, "direction": "down", "placements": []},
+      {"playerId": 2, "direction": "left", "placements": []},
+      {"playerId": 3, "direction": "right", "placements": []},
+      {"playerId": 4, "direction": "up", "placements": []}
+    ]},
+    { "roundId": 4, "actions": [
+      {"playerId": 1, "direction": "wait", "placements": []},
+      {"playerId": 2, "direction": "wait", "placements": []},
+      {"playerId": 3, "direction": "wait", "placements": []},
+      {"playerId": 4, "direction": "wait", "placements": []}
+    ]},
+    { "roundId": 5, "actions": [
+      {"playerId": 1, "direction": "up", "placements": []},
+      {"playerId": 2, "direction": "right", "placements": []},
+      {"playerId": 3, "direction": "left", "placements": []},
+      {"playerId": 4, "direction": "down", "placements": []}
+    ]},
+    { "roundId": 6, "actions": [
+      {"playerId": 1, "direction": "right", "placements": []},
+      {"playerId": 2, "direction": "down", "placements": []},
+      {"playerId": 3, "direction": "up", "placements": []},
+      {"playerId": 4, "direction": "left", "placements": []}
+    ]},
+    { "roundId": 7, "actions": [
+      {"playerId": 1, "direction": "right", "placements": [{"x": 2, "y": 0}]},
+      {"playerId": 2, "direction": "down", "placements": [{"x": 20, "y": 2}]},
+      {"playerId": 3, "direction": "up", "placements": [{"x": 0, "y": 18}]},
+      {"playerId": 4, "direction": "left", "placements": [{"x": 18, "y": 20}]}
+    ]},
+    { "roundId": 8, "actions": [
+      {"playerId": 1, "direction": "left", "placements": []},
+      {"playerId": 2, "direction": "up", "placements": []},
+      {"playerId": 3, "direction": "down", "placements": []},
+      {"playerId": 4, "direction": "right", "placements": []}
+    ]},
+    { "roundId": 9, "actions": [
+      {"playerId": 1, "direction": "left", "placements": []},
+      {"playerId": 2, "direction": "up", "placements": []},
+      {"playerId": 3, "direction": "down", "placements": []},
+      {"playerId": 4, "direction": "right", "placements": []}
+    ]},
+    { "roundId": 10, "actions": [
+      {"playerId": 1, "direction": "wait", "placements": []},
+      {"playerId": 2, "direction": "wait", "placements": []},
+      {"playerId": 3, "direction": "wait", "placements": []},
+      {"playerId": 4, "direction": "wait", "placements": []}
+    ]},
+    { "roundId": 11, "actions": [
+      {"playerId": 1, "direction": "right", "placements": []},
+      {"playerId": 2, "direction": "down", "placements": []},
+      {"playerId": 3, "direction": "up", "placements": []},
+      {"playerId": 4, "direction": "left", "placements": []}
+    ]},
+    { "roundId": 12, "actions": [
+      {"playerId": 1, "direction": "right", "placements": []},
+      {"playerId": 2, "direction": "down", "placements": []},
+      {"playerId": 3, "direction": "up", "placements": []},
+      {"playerId": 4, "direction": "left", "placements": []}
+    ]},
+    { "roundId": 13, "actions": [
+      {"playerId": 1, "direction": "right", "placements": [{"x": 3, "y": 0}]},
+      {"playerId": 2, "direction": "down", "placements": [{"x": 20, "y": 3}]},
+      {"playerId": 3, "direction": "up", "placements": [{"x": 0, "y": 17}]},
+      {"playerId": 4, "direction": "left", "placements": [{"x": 17, "y": 20}]}
+    ]},
+    { "roundId": 14, "actions": [
+      {"playerId": 1, "direction": "left", "placements": []},
+      {"playerId": 2, "direction": "up", "placements": []},
+      {"playerId": 3, "direction": "down", "placements": []},
+      {"playerId": 4, "direction": "right", "placements": []}
+    ]},
+    { "roundId": 15, "actions": [
+      {"playerId": 1, "direction": "left", "placements": []},
+      {"playerId": 2, "direction": "up", "placements": []},
+      {"playerId": 3, "direction": "down", "placements": []},
+      {"playerId": 4, "direction": "right", "placements": []}
+    ]},
+    { "roundId": 16, "actions": [
+      {"playerId": 1, "direction": "wait", "placements": []},
+      {"playerId": 2, "direction": "wait", "placements": []},
+      {"playerId": 3, "direction": "wait", "placements": []},
+      {"playerId": 4, "direction": "wait", "placements": []}
+    ]},
+    { "roundId": 17, "actions": [
+      {"playerId": 1, "direction": "right", "placements": []},
+      {"playerId": 2, "direction": "down", "placements": []},
+      {"playerId": 3, "direction": "up", "placements": []},
+      {"playerId": 4, "direction": "left", "placements": []}
+    ]},
+    { "roundId": 18, "actions": [
+      {"playerId": 1, "direction": "right", "placements": []},
+      {"playerId": 2, "direction": "down", "placements": []},
+      {"playerId": 3, "direction": "up", "placements": []},
+      {"playerId": 4, "direction": "left", "placements": []}
+    ]},
+    { "roundId": 19, "actions": [
+      {"playerId": 1, "direction": "right", "placements": [{"x": 4, "y": 0}]},
+      {"playerId": 2, "direction": "down", "placements": [{"x": 20, "y": 4}]},
+      {"playerId": 3, "direction": "up", "placements": [{"x": 0, "y": 16}]},
+      {"playerId": 4, "direction": "left", "placements": [{"x": 16, "y": 20}]}
+    ]},
+    { "roundId": 20, "actions": [
+      {"playerId": 1, "direction": "left", "placements": []},
+      {"playerId": 2, "direction": "up", "placements": []},
+      {"playerId": 3, "direction": "down", "placements": []},
+      {"playerId": 4, "direction": "right", "placements": []}
+    ]},
+    { "roundId": 21, "actions": [
+      {"playerId": 1, "direction": "left", "placements": []},
+      {"playerId": 2, "direction": "up", "placements": []},
+      {"playerId": 3, "direction": "down", "placements": []},
+      {"playerId": 4, "direction": "right", "placements": []}
+    ]},
+    { "roundId": 22, "actions": [
+      {"playerId": 1, "direction": "wait", "placements": []},
+      {"playerId": 2, "direction": "wait", "placements": []},
+      {"playerId": 3, "direction": "wait", "placements": []},
+      {"playerId": 4, "direction": "wait", "placements": []}
+    ]},
+    { "roundId": 23, "actions": [
+      {"playerId": 1, "direction": "right", "placements": []},
+      {"playerId": 2, "direction": "down", "placements": []},
+      {"playerId": 3, "direction": "up", "placements": []},
+      {"playerId": 4, "direction": "left", "placements": []}
+    ]},
+    { "roundId": 24, "actions": [
+      {"playerId": 1, "direction": "right", "placements": []},
+      {"playerId": 2, "direction": "down", "placements": []},
+      {"playerId": 3, "direction": "up", "placements": []},
+      {"playerId": 4, "direction": "left", "placements": []}
+    ]},
+    { "roundId": 25, "actions": [
+      {"playerId": 1, "direction": "right", "placements": [{"x": 5, "y": 0}]},
+      {"playerId": 2, "direction": "down", "placements": [{"x": 20, "y": 5}]},
+      {"playerId": 3, "direction": "up", "placements": [{"x": 0, "y": 15}]},
+      {"playerId": 4, "direction": "left", "placements": [{"x": 15, "y": 20}]}
+    ]},
+    { "roundId": 26, "actions": [
+      {"playerId": 1, "direction": "left", "placements": []},
+      {"playerId": 2, "direction": "up", "placements": []},
+      {"playerId": 3, "direction": "down", "placements": []},
+      {"playerId": 4, "direction": "right", "placements": []}
+    ]},
+    { "roundId": 27, "actions": [
+      {"playerId": 1, "direction": "left", "placements": []},
+      {"playerId": 2, "direction": "up", "placements": []},
+      {"playerId": 3, "direction": "down", "placements": []},
+      {"playerId": 4, "direction": "right", "placements": []}
+    ]},
+    { "roundId": 28, "actions": [
+      {"playerId": 1, "direction": "wait", "placements": []},
+      {"playerId": 2, "direction": "wait", "placements": []},
+      {"playerId": 3, "direction": "wait", "placements": []},
+      {"playerId": 4, "direction": "wait", "placements": []}
+    ]},
+    { "roundId": 29, "actions": [
+      {"playerId": 1, "direction": "right", "placements": []},
+      {"playerId": 2, "direction": "down", "placements": []},
+      {"playerId": 3, "direction": "up", "placements": []},
+      {"playerId": 4, "direction": "left", "placements": []}
+    ]},
+    { "roundId": 30, "actions": [
+      {"playerId": 1, "direction": "right", "placements": []},
+      {"playerId": 2, "direction": "down", "placements": []},
+      {"playerId": 3, "direction": "up", "placements": []},
+      {"playerId": 4, "direction": "left", "placements": []}
+    ]},
+    { "roundId": 31, "actions": [
+      {"playerId": 1, "direction": "right", "placements": [{"x": 6, "y": 0}]},
+      {"playerId": 2, "direction": "down", "placements": [{"x": 20, "y": 6}]},
+      {"playerId": 3, "direction": "up", "placements": [{"x": 0, "y": 14}]},
+      {"playerId": 4, "direction": "left", "placements": [{"x": 14, "y": 20}]}
+    ]},
+    { "roundId": 32, "actions": [
+      {"playerId": 1, "direction": "left", "placements": []},
+      {"playerId": 2, "direction": "up", "placements": []},
+      {"playerId": 3, "direction": "down", "placements": []},
+      {"playerId": 4, "direction": "right", "placements": []}
+    ]},
+    { "roundId": 33, "actions": [
+      {"playerId": 1, "direction": "left", "placements": []},
+      {"playerId": 2, "direction": "up", "placements": []},
+      {"playerId": 3, "direction": "down", "placements": []},
+      {"playerId": 4, "direction": "right", "placements": []}
+    ]},
+    { "roundId": 34, "actions": [
+      {"playerId": 1, "direction": "wait", "placements": []},
+      {"playerId": 2, "direction": "wait", "placements": []},
+      {"playerId": 3, "direction": "wait", "placements": []},
+      {"playerId": 4, "direction": "wait", "placements": []}
+    ]},
+    { "roundId": 35, "actions": [
+      {"playerId": 1, "direction": "right", "placements": []},
+      {"playerId": 2, "direction": "down", "placements": []},
+      {"playerId": 3, "direction": "up", "placements": []},
+      {"playerId": 4, "direction": "left", "placements": []}
+    ]},
+    { "roundId": 36, "actions": [
+      {"playerId": 1, "direction": "right", "placements": []},
+      {"playerId": 2, "direction": "down", "placements": []},
+      {"playerId": 3, "direction": "up", "placements": []},
+      {"playerId": 4, "direction": "left", "placements": []}
+    ]},
+    { "roundId": 37, "actions": [
+      {"playerId": 1, "direction": "right", "placements": [{"x": 7, "y": 0}]},
+      {"playerId": 2, "direction": "down", "placements": [{"x": 20, "y": 7}]},
+      {"playerId": 3, "direction": "up", "placements": [{"x": 0, "y": 13}]},
+      {"playerId": 4, "direction": "left", "placements": [{"x": 13, "y": 20}]}
+    ]},
+    { "roundId": 38, "actions": [
+      {"playerId": 1, "direction": "left", "placements": []},
+      {"playerId": 2, "direction": "up", "placements": []},
+      {"playerId": 3, "direction": "down", "placements": []},
+      {"playerId": 4, "direction": "right", "placements": []}
+    ]},
+    { "roundId": 39, "actions": [
+      {"playerId": 1, "direction": "left", "placements": []},
+      {"playerId": 2, "direction": "up", "placements": []},
+      {"playerId": 3, "direction": "down", "placements": []},
+      {"playerId": 4, "direction": "right", "placements": []}
+    ]},
+    { "roundId": 40, "actions": [
+      {"playerId": 1, "direction": "wait", "placements": []},
+      {"playerId": 2, "direction": "wait", "placements": []},
+      {"playerId": 3, "direction": "wait", "placements": []},
+      {"playerId": 4, "direction": "wait", "placements": []}
+    ]},
+    { "roundId": 41, "actions": [
+      {"playerId": 1, "direction": "right", "placements": []},
+      {"playerId": 2, "direction": "down", "placements": []},
+      {"playerId": 3, "direction": "up", "placements": []},
+      {"playerId": 4, "direction": "left", "placements": []}
+    ]},
+    { "roundId": 42, "actions": [
+      {"playerId": 1, "direction": "right", "placements": []},
+      {"playerId": 2, "direction": "down", "placements": []},
+      {"playerId": 3, "direction": "up", "placements": []},
+      {"playerId": 4, "direction": "left", "placements": []}
+    ]},
+    { "roundId": 43, "actions": [
+      {"playerId": 1, "direction": "right", "placements": [{"x": 8, "y": 0}]},
+      {"playerId": 2, "direction": "down", "placements": [{"x": 20, "y": 8}]},
+      {"playerId": 3, "direction": "up", "placements": [{"x": 0, "y": 12}]},
+      {"playerId": 4, "direction": "left", "placements": [{"x": 12, "y": 20}]}
+    ]},
+    { "roundId": 44, "actions": [
+      {"playerId": 1, "direction": "left", "placements": []},
+      {"playerId": 2, "direction": "up", "placements": []},
+      {"playerId": 3, "direction": "down", "placements": []},
+      {"playerId": 4, "direction": "right", "placements": []}
+    ]},
+    { "roundId": 45, "actions": [
+      {"playerId": 1, "direction": "left", "placements": []},
+      {"playerId": 2, "direction": "up", "placements": []},
+      {"playerId": 3, "direction": "down", "placements": []},
+      {"playerId": 4, "direction": "right", "placements": []}
+    ]},
+    { "roundId": 46, "actions": [
+      {"playerId": 1, "direction": "wait", "placements": []},
+      {"playerId": 2, "direction": "wait", "placements": []},
+      {"playerId": 3, "direction": "wait", "placements": []},
+      {"playerId": 4, "direction": "wait", "placements": []}
+    ]},
+    { "roundId": 47, "actions": [
+      {"playerId": 1, "direction": "right", "placements": []},
+      {"playerId": 2, "direction": "down", "placements": []},
+      {"playerId": 3, "direction": "up", "placements": []},
+      {"playerId": 4, "direction": "left", "placements": []}
+    ]},
+    { "roundId": 48, "actions": [
+      {"playerId": 1, "direction": "right", "placements": []},
+      {"playerId": 2, "direction": "down", "placements": []},
+      {"playerId": 3, "direction": "up", "placements": []},
+      {"playerId": 4, "direction": "left", "placements": []}
+    ]},
+    { "roundId": 49, "actions": [
+      {"playerId": 1, "direction": "right", "placements": [{"x": 9, "y": 0}]},
+      {"playerId": 2, "direction": "down", "placements": [{"x": 20, "y": 9}]},
+      {"playerId": 3, "direction": "up", "placements": [{"x": 0, "y": 11}]},
+      {"playerId": 4, "direction": "left", "placements": [{"x": 11, "y": 20}]}
+    ]},
+    { "roundId": 50, "actions": [
+      {"playerId": 1, "direction": "left", "placements": []},
+      {"playerId": 2, "direction": "up", "placements": []},
+      {"playerId": 3, "direction": "down", "placements": []},
+      {"playerId": 4, "direction": "right", "placements": []}
+    ]},
+    { "roundId": 51, "actions": [
+      {"playerId": 1, "direction": "left", "placements": []},
+      {"playerId": 2, "direction": "up", "placements": []},
+      {"playerId": 3, "direction": "down", "placements": []},
+      {"playerId": 4, "direction": "right", "placements": []}
+    ]},
+    { "roundId": 52, "actions": [
+      {"playerId": 1, "direction": "wait", "placements": []},
+      {"playerId": 2, "direction": "wait", "placements": []},
+      {"playerId": 3, "direction": "wait", "placements": []},
+      {"playerId": 4, "direction": "wait", "placements": []}
+    ]},
+    { "roundId": 53, "actions": [
+      {"playerId": 1, "direction": "right", "placements": []},
+      {"playerId": 2, "direction": "down", "placements": []},
+      {"playerId": 3, "direction": "up", "placements": []},
+      {"playerId": 4, "direction": "left", "placements": []}
+    ]},
+    { "roundId": 54, "actions": [
+      {"playerId": 1, "direction": "right", "placements": []},
+      {"playerId": 2, "direction": "down", "placements": []},
+      {"playerId": 3, "direction": "up", "placements": []},
+      {"playerId": 4, "direction": "left", "placements": []}
+    ]},
+    { "roundId": 55, "actions": [
+      {"playerId": 1, "direction": "right", "placements": [{"x": 10, "y": 0}]},
+      {"playerId": 2, "direction": "down", "placements": [{"x": 20, "y": 10}]},
+      {"playerId": 3, "direction": "up", "placements": [{"x": 0, "y": 10}]},
+      {"playerId": 4, "direction": "left", "placements": [{"x": 10, "y": 20}]}
+    ]},
+    { "roundId": 56, "actions": [
+      {"playerId": 1, "direction": "left", "placements": []},
+      {"playerId": 2, "direction": "up", "placements": []},
+      {"playerId": 3, "direction": "down", "placements": []},
+      {"playerId": 4, "direction": "right", "placements": []}
+    ]},
+    { "roundId": 57, "actions": [
+      {"playerId": 1, "direction": "left", "placements": []},
+      {"playerId": 2, "direction": "up", "placements": []},
+      {"playerId": 3, "direction": "down", "placements": []},
+      {"playerId": 4, "direction": "right", "placements": []}
+    ]},
+    { "roundId": 58, "actions": [
+      {"playerId": 1, "direction": "wait", "placements": []},
+      {"playerId": 2, "direction": "wait", "placements": []},
+      {"playerId": 3, "direction": "wait", "placements": []},
+      {"playerId": 4, "direction": "wait", "placements": []}
+    ]},
+    { "roundId": 59, "actions": [
+      {"playerId": 1, "direction": "right", "placements": []},
+      {"playerId": 2, "direction": "down", "placements": []},
+      {"playerId": 3, "direction": "up", "placements": []},
+      {"playerId": 4, "direction": "left", "placements": []}
+    ]},
+    { "roundId": 60, "actions": [
+      {"playerId": 1, "direction": "right", "placements": []},
+      {"playerId": 2, "direction": "down", "placements": []},
+      {"playerId": 3, "direction": "up", "placements": []},
+      {"playerId": 4, "direction": "left", "placements": []}
+    ]},
+    { "roundId": 61, "actions": [
+      {"playerId": 1, "direction": "right", "placements": [{"x": 11, "y": 0}]},
+      {"playerId": 2, "direction": "down", "placements": [{"x": 20, "y": 11}]},
+      {"playerId": 3, "direction": "up", "placements": [{"x": 0, "y": 9}]},
+      {"playerId": 4, "direction": "left", "placements": [{"x": 9, "y": 20}]}
+    ]},
+    { "roundId": 62, "actions": [
+      {"playerId": 1, "direction": "left", "placements": []},
+      {"playerId": 2, "direction": "up", "placements": []},
+      {"playerId": 3, "direction": "down", "placements": []},
+      {"playerId": 4, "direction": "right", "placements": []}
+    ]},
+    { "roundId": 63, "actions": [
+      {"playerId": 1, "direction": "left", "placements": []},
+      {"playerId": 2, "direction": "up", "placements": []},
+      {"playerId": 3, "direction": "down", "placements": []},
+      {"playerId": 4, "direction": "right", "placements": []}
+    ]},
+    { "roundId": 64, "actions": [
+      {"playerId": 1, "direction": "wait", "placements": []},
+      {"playerId": 2, "direction": "wait", "placements": []},
+      {"playerId": 3, "direction": "wait", "placements": []},
+      {"playerId": 4, "direction": "wait", "placements": []}
+    ]},
+    { "roundId": 65, "actions": [
+      {"playerId": 1, "direction": "right", "placements": []},
+      {"playerId": 2, "direction": "down", "placements": []},
+      {"playerId": 3, "direction": "up", "placements": []},
+      {"playerId": 4, "direction": "left", "placements": []}
+    ]},
+    { "roundId": 66, "actions": [
+      {"playerId": 1, "direction": "right", "placements": []},
+      {"playerId": 2, "direction": "down", "placements": []},
+      {"playerId": 3, "direction": "up", "placements": []},
+      {"playerId": 4, "direction": "left", "placements": []}
+    ]},
+    { "roundId": 67, "actions": [
+      {"playerId": 1, "direction": "right", "placements": [{"x": 12, "y": 0}]},
+      {"playerId": 2, "direction": "down", "placements": [{"x": 20, "y": 12}]},
+      {"playerId": 3, "direction": "up", "placements": [{"x": 0, "y": 8}]},
+      {"playerId": 4, "direction": "left", "placements": [{"x": 8, "y": 20}]}
+    ]},
+    { "roundId": 68, "actions": [
+      {"playerId": 1, "direction": "left", "placements": []},
+      {"playerId": 2, "direction": "up", "placements": []},
+      {"playerId": 3, "direction": "down", "placements": []},
+      {"playerId": 4, "direction": "right", "placements": []}
+    ]},
+    { "roundId": 69, "actions": [
+      {"playerId": 1, "direction": "left", "placements": []},
+      {"playerId": 2, "direction": "up", "placements": []},
+      {"playerId": 3, "direction": "down", "placements": []},
+      {"playerId": 4, "direction": "right", "placements": []}
+    ]},
+    { "roundId": 70, "actions": [
+      {"playerId": 1, "direction": "wait", "placements": []},
+      {"playerId": 2, "direction": "wait", "placements": []},
+      {"playerId": 3, "direction": "wait", "placements": []},
+      {"playerId": 4, "direction": "wait", "placements": []}
+    ]},
+    { "roundId": 71, "actions": [
+      {"playerId": 1, "direction": "right", "placements": []},
+      {"playerId": 2, "direction": "down", "placements": []},
+      {"playerId": 3, "direction": "up", "placements": []},
+      {"playerId": 4, "direction": "left", "placements": []}
+    ]},
+    { "roundId": 72, "actions": [
+      {"playerId": 1, "direction": "right", "placements": []},
+      {"playerId": 2, "direction": "down", "placements": []},
+      {"playerId": 3, "direction": "up", "placements": []},
+      {"playerId": 4, "direction": "left", "placements": []}
+    ]},
+    { "roundId": 73, "actions": [
+      {"playerId": 1, "direction": "right", "placements": [{"x": 13, "y": 0}]},
+      {"playerId": 2, "direction": "down", "placements": [{"x": 20, "y": 13}]},
+      {"playerId": 3, "direction": "up", "placements": [{"x": 0, "y": 7}]},
+      {"playerId": 4, "direction": "left", "placements": [{"x": 7, "y": 20}]}
+    ]},
+    { "roundId": 74, "actions": [
+      {"playerId": 1, "direction": "left", "placements": []},
+      {"playerId": 2, "direction": "up", "placements": []},
+      {"playerId": 3, "direction": "down", "placements": []},
+      {"playerId": 4, "direction": "right", "placements": []}
+    ]},
+    { "roundId": 75, "actions": [
+      {"playerId": 1, "direction": "left", "placements": []},
+      {"playerId": 2, "direction": "up", "placements": []},
+      {"playerId": 3, "direction": "down", "placements": []},
+      {"playerId": 4, "direction": "right", "placements": []}
+    ]},
+    { "roundId": 76, "actions": [
+      {"playerId": 1, "direction": "wait", "placements": []},
+      {"playerId": 2, "direction": "wait", "placements": []},
+      {"playerId": 3, "direction": "wait", "placements": []},
+      {"playerId": 4, "direction": "wait", "placements": []}
+    ]},
+    { "roundId": 77, "actions": [
+      {"playerId": 1, "direction": "right", "placements": []},
+      {"playerId": 2, "direction": "down", "placements": []},
+      {"playerId": 3, "direction": "up", "placements": []},
+      {"playerId": 4, "direction": "left", "placements": []}
+    ]},
+    { "roundId": 78, "actions": [
+      {"playerId": 1, "direction": "right", "placements": []},
+      {"playerId": 2, "direction": "down", "placements": []},
+      {"playerId": 3, "direction": "up", "placements": []},
+      {"playerId": 4, "direction": "left", "placements": []}
+    ]},
+    { "roundId": 79, "actions": [
+      {"playerId": 1, "direction": "right", "placements": [{"x": 14, "y": 0}]},
+      {"playerId": 2, "direction": "down", "placements": [{"x": 20, "y": 14}]},
+      {"playerId": 3, "direction": "up", "placements": [{"x": 0, "y": 6}]},
+      {"playerId": 4, "direction": "left", "placements": [{"x": 6, "y": 20}]}
+    ]},
+    { "roundId": 80, "actions": [
+      {"playerId": 1, "direction": "left", "placements": []},
+      {"playerId": 2, "direction": "up", "placements": []},
+      {"playerId": 3, "direction": "down", "placements": []},
+      {"playerId": 4, "direction": "right", "placements": []}
+    ]},
+    { "roundId": 81, "actions": [
+      {"playerId": 1, "direction": "left", "placements": []},
+      {"playerId": 2, "direction": "up", "placements": []},
+      {"playerId": 3, "direction": "down", "placements": []},
+      {"playerId": 4, "direction": "right", "placements": []}
+    ]},
+    { "roundId": 82, "actions": [
+      {"playerId": 1, "direction": "wait", "placements": []},
+      {"playerId": 2, "direction": "wait", "placements": []},
+      {"playerId": 3, "direction": "wait", "placements": []},
+      {"playerId": 4, "direction": "wait", "placements": []}
+    ]},
+    { "roundId": 83, "actions": [
+      {"playerId": 1, "direction": "right", "placements": []},
+      {"playerId": 2, "direction": "down", "placements": []},
+      {"playerId": 3, "direction": "up", "placements": []},
+      {"playerId": 4, "direction": "left", "placements": []}
+    ]},
+    { "roundId": 84, "actions": [
+      {"playerId": 1, "direction": "right", "placements": []},
+      {"playerId": 2, "direction": "down", "placements": []},
+      {"playerId": 3, "direction": "up", "placements": []},
+      {"playerId": 4, "direction": "left", "placements": []}
+    ]},
+    { "roundId": 85, "actions": [
+      {"playerId": 1, "direction": "right", "placements": [{"x": 15, "y": 0}]},
+      {"playerId": 2, "direction": "down", "placements": [{"x": 20, "y": 15}]},
+      {"playerId": 3, "direction": "up", "placements": [{"x": 0, "y": 5}]},
+      {"playerId": 4, "direction": "left", "placements": [{"x": 5, "y": 20}]}
+    ]},
+    { "roundId": 86, "actions": [
+      {"playerId": 1, "direction": "left", "placements": []},
+      {"playerId": 2, "direction": "up", "placements": []},
+      {"playerId": 3, "direction": "down", "placements": []},
+      {"playerId": 4, "direction": "right", "placements": []}
+    ]},
+    { "roundId": 87, "actions": [
+      {"playerId": 1, "direction": "left", "placements": []},
+      {"playerId": 2, "direction": "up", "placements": []},
+      {"playerId": 3, "direction": "down", "placements": []},
+      {"playerId": 4, "direction": "right", "placements": []}
+    ]},
+    { "roundId": 88, "actions": [
+      {"playerId": 1, "direction": "wait", "placements": []},
+      {"playerId": 2, "direction": "wait", "placements": []},
+      {"playerId": 3, "direction": "wait", "placements": []},
+      {"playerId": 4, "direction": "wait", "placements": []}
+    ]},
+    { "roundId": 89, "actions": [
+      {"playerId": 1, "direction": "right", "placements": []},
+      {"playerId": 2, "direction": "down", "placements": []},
+      {"playerId": 3, "direction": "up", "placements": []},
+      {"playerId": 4, "direction": "left", "placements": []}
+    ]},
+    { "roundId": 90, "actions": [
+      {"playerId": 1, "direction": "right", "placements": []},
+      {"playerId": 2, "direction": "down", "placements": []},
+      {"playerId": 3, "direction": "up", "placements": []},
+      {"playerId": 4, "direction": "left", "placements": []}
+    ]},
+    { "roundId": 91, "actions": [
+      {"playerId": 1, "direction": "right", "placements": [{"x": 16, "y": 0}]},
+      {"playerId": 2, "direction": "down", "placements": [{"x": 20, "y": 16}]},
+      {"playerId": 3, "direction": "up", "placements": [{"x": 0, "y": 4}]},
+      {"playerId": 4, "direction": "left", "placements": [{"x": 4, "y": 20}]}
+    ]},
+    { "roundId": 92, "actions": [
+      {"playerId": 1, "direction": "left", "placements": []},
+      {"playerId": 2, "direction": "up", "placements": []},
+      {"playerId": 3, "direction": "down", "placements": []},
+      {"playerId": 4, "direction": "right", "placements": []}
+    ]},
+    { "roundId": 93, "actions": [
+      {"playerId": 1, "direction": "left", "placements": []},
+      {"playerId": 2, "direction": "up", "placements": []},
+      {"playerId": 3, "direction": "down", "placements": []},
+      {"playerId": 4, "direction": "right", "placements": []}
+    ]},
+    { "roundId": 94, "actions": [
+      {"playerId": 1, "direction": "wait", "placements": []},
+      {"playerId": 2, "direction": "wait", "placements": []},
+      {"playerId": 3, "direction": "wait", "placements": []},
+      {"playerId": 4, "direction": "wait", "placements": []}
+    ]},
+    { "roundId": 95, "actions": [
+      {"playerId": 1, "direction": "right", "placements": []},
+      {"playerId": 2, "direction": "down", "placements": []},
+      {"playerId": 3, "direction": "up", "placements": []},
+      {"playerId": 4, "direction": "left", "placements": []}
+    ]},
+    { "roundId": 96, "actions": [
+      {"playerId": 1, "direction": "right", "placements": []},
+      {"playerId": 2, "direction": "down", "placements": []},
+      {"playerId": 3, "direction": "up", "placements": []},
+      {"playerId": 4, "direction": "left", "placements": []}
+    ]},
+    { "roundId": 97, "actions": [
+      {"playerId": 1, "direction": "right", "placements": [{"x": 17, "y": 0}]},
+      {"playerId": 2, "direction": "down", "placements": [{"x": 20, "y": 17}]},
+      {"playerId": 3, "direction": "up", "placements": [{"x": 0, "y": 3}]},
+      {"playerId": 4, "direction": "left", "placements": [{"x": 3, "y": 20}]}
+    ]},
+    { "roundId": 98, "actions": [
+      {"playerId": 1, "direction": "left", "placements": []},
+      {"playerId": 2, "direction": "up", "placements": []},
+      {"playerId": 3, "direction": "down", "placements": []},
+      {"playerId": 4, "direction": "right", "placements": []}
+    ]},
+    { "roundId": 99, "actions": [
+      {"playerId": 1, "direction": "left", "placements": []},
+      {"playerId": 2, "direction": "up", "placements": []},
+      {"playerId": 3, "direction": "down", "placements": []},
+      {"playerId": 4, "direction": "right", "placements": []}
+    ]},
+    { "roundId": 100, "actions": [
+      {"playerId": 1, "direction": "wait", "placements": []},
+      {"playerId": 2, "direction": "wait", "placements": []},
+      {"playerId": 3, "direction": "wait", "placements": []},
+      {"playerId": 4, "direction": "wait", "placements": []}
+    ]},
+    { "roundId": 101, "actions": [
+      {"playerId": 1, "direction": "right", "placements": []},
+      {"playerId": 2, "direction": "down", "placements": []},
+      {"playerId": 3, "direction": "up", "placements": []},
+      {"playerId": 4, "direction": "left", "placements": []}
+    ]},
+    { "roundId": 102, "actions": [
+      {"playerId": 1, "direction": "right", "placements": []},
+      {"playerId": 2, "direction": "down", "placements": []},
+      {"playerId": 3, "direction": "up", "placements": []},
+      {"playerId": 4, "direction": "left", "placements": []}
+    ]},
+    { "roundId": 103, "actions": [
+      {"playerId": 1, "direction": "right", "placements": []},
+      {"playerId": 2, "direction": "down", "placements": []},
+      {"playerId": 3, "direction": "up", "placements": []},
+      {"playerId": 4, "direction": "left", "placements": []}
+    ]},
+    { "roundId": 104, "actions": [
+      {"playerId": 1, "direction": "right", "placements": []},
+      {"playerId": 2, "direction": "down", "placements": []},
+      {"playerId": 3, "direction": "up", "placements": []},
+      {"playerId": 4, "direction": "left", "placements": []}
+    ]},
+    { "roundId": 105, "actions": [
+      {"playerId": 1, "direction": "right", "placements": []},
+      {"playerId": 2, "direction": "down", "placements": []},
+      {"playerId": 3, "direction": "up", "placements": []},
+      {"playerId": 4, "direction": "left", "placements": []}
+    ]},
+    { "roundId": 106, "actions": [
+      {"playerId": 1, "direction": "wait", "placements": [{"x": 20, "y": 0}]},
+      {"playerId": 2, "direction": "wait", "placements": [{"x": 20, "y": 20}]},
+      {"playerId": 3, "direction": "wait", "placements": []},
+      {"playerId": 4, "direction": "wait", "placements": [{"x": 0, "y": 20}]}
+    ]},
+    { "roundId": 107, "actions": [
+      {"playerId": 1, "direction": "wait", "placements": []},
+      {"playerId": 2, "direction": "wait", "placements": []},
+      {"playerId": 3, "direction": "wait", "placements": []},
+      {"playerId": 4, "direction": "wait", "placements": []}
+    ]},
+    { "roundId": 108, "actions": [
+      {"playerId": 1, "direction": "wait", "placements": []},
+      {"playerId": 2, "direction": "wait", "placements": []},
+      {"playerId": 3, "direction": "wait", "placements": []},
+      {"playerId": 4, "direction": "wait", "placements": []}
+    ]}
+  ],
+  "expected": {
+    "end": {"tick": 108, "winnerId": 3},
+    "players": [
+      {"playerId": 1, "position": {"x": 20, "y": 0}, "deathTick": 108, "ownedBubblesAtDeath": 0},
+      {"playerId": 2, "position": {"x": 20, "y": 20}, "deathTick": 108, "ownedBubblesAtDeath": 0},
+      {"playerId": 3, "position": {"x": 0, "y": 0}, "deathTick": null, "ownedBubblesAtDeath": 0},
+      {"playerId": 4, "position": {"x": 0, "y": 20}, "deathTick": 108, "ownedBubblesAtDeath": 0}
+    ],
+    "bubbles": [
+      {"id": 1, "ownerId": 1, "position": {"x": 1, "y": 0}, "placedAt": 1, "dueAt": 4, "explodedAt": 4, "sourceBubbleId": null},
+      {"id": 2, "ownerId": 2, "position": {"x": 20, "y": 1}, "placedAt": 1, "dueAt": 4, "explodedAt": 4, "sourceBubbleId": null},
+      {"id": 3, "ownerId": 3, "position": {"x": 0, "y": 19}, "placedAt": 1, "dueAt": 4, "explodedAt": 4, "sourceBubbleId": null},
+      {"id": 4, "ownerId": 4, "position": {"x": 19, "y": 20}, "placedAt": 1, "dueAt": 4, "explodedAt": 4, "sourceBubbleId": null},
+      {"id": 5, "ownerId": 1, "position": {"x": 2, "y": 0}, "placedAt": 7, "dueAt": 10, "explodedAt": 10, "sourceBubbleId": null},
+      {"id": 6, "ownerId": 2, "position": {"x": 20, "y": 2}, "placedAt": 7, "dueAt": 10, "explodedAt": 10, "sourceBubbleId": null},
+      {"id": 7, "ownerId": 3, "position": {"x": 0, "y": 18}, "placedAt": 7, "dueAt": 10, "explodedAt": 10, "sourceBubbleId": null},
+      {"id": 8, "ownerId": 4, "position": {"x": 18, "y": 20}, "placedAt": 7, "dueAt": 10, "explodedAt": 10, "sourceBubbleId": null},
+      {"id": 9, "ownerId": 1, "position": {"x": 3, "y": 0}, "placedAt": 13, "dueAt": 16, "explodedAt": 16, "sourceBubbleId": null},
+      {"id": 10, "ownerId": 2, "position": {"x": 20, "y": 3}, "placedAt": 13, "dueAt": 16, "explodedAt": 16, "sourceBubbleId": null},
+      {"id": 11, "ownerId": 3, "position": {"x": 0, "y": 17}, "placedAt": 13, "dueAt": 16, "explodedAt": 16, "sourceBubbleId": null},
+      {"id": 12, "ownerId": 4, "position": {"x": 17, "y": 20}, "placedAt": 13, "dueAt": 16, "explodedAt": 16, "sourceBubbleId": null},
+      {"id": 13, "ownerId": 1, "position": {"x": 4, "y": 0}, "placedAt": 19, "dueAt": 22, "explodedAt": 22, "sourceBubbleId": null},
+      {"id": 14, "ownerId": 2, "position": {"x": 20, "y": 4}, "placedAt": 19, "dueAt": 22, "explodedAt": 22, "sourceBubbleId": null},
+      {"id": 15, "ownerId": 3, "position": {"x": 0, "y": 16}, "placedAt": 19, "dueAt": 22, "explodedAt": 22, "sourceBubbleId": null},
+      {"id": 16, "ownerId": 4, "position": {"x": 16, "y": 20}, "placedAt": 19, "dueAt": 22, "explodedAt": 22, "sourceBubbleId": null},
+      {"id": 17, "ownerId": 1, "position": {"x": 5, "y": 0}, "placedAt": 25, "dueAt": 28, "explodedAt": 28, "sourceBubbleId": null},
+      {"id": 18, "ownerId": 2, "position": {"x": 20, "y": 5}, "placedAt": 25, "dueAt": 28, "explodedAt": 28, "sourceBubbleId": null},
+      {"id": 19, "ownerId": 3, "position": {"x": 0, "y": 15}, "placedAt": 25, "dueAt": 28, "explodedAt": 28, "sourceBubbleId": null},
+      {"id": 20, "ownerId": 4, "position": {"x": 15, "y": 20}, "placedAt": 25, "dueAt": 28, "explodedAt": 28, "sourceBubbleId": null},
+      {"id": 21, "ownerId": 1, "position": {"x": 6, "y": 0}, "placedAt": 31, "dueAt": 34, "explodedAt": 34, "sourceBubbleId": null},
+      {"id": 22, "ownerId": 2, "position": {"x": 20, "y": 6}, "placedAt": 31, "dueAt": 34, "explodedAt": 34, "sourceBubbleId": null},
+      {"id": 23, "ownerId": 3, "position": {"x": 0, "y": 14}, "placedAt": 31, "dueAt": 34, "explodedAt": 34, "sourceBubbleId": null},
+      {"id": 24, "ownerId": 4, "position": {"x": 14, "y": 20}, "placedAt": 31, "dueAt": 34, "explodedAt": 34, "sourceBubbleId": null},
+      {"id": 25, "ownerId": 1, "position": {"x": 7, "y": 0}, "placedAt": 37, "dueAt": 40, "explodedAt": 40, "sourceBubbleId": null},
+      {"id": 26, "ownerId": 2, "position": {"x": 20, "y": 7}, "placedAt": 37, "dueAt": 40, "explodedAt": 40, "sourceBubbleId": null},
+      {"id": 27, "ownerId": 3, "position": {"x": 0, "y": 13}, "placedAt": 37, "dueAt": 40, "explodedAt": 40, "sourceBubbleId": null},
+      {"id": 28, "ownerId": 4, "position": {"x": 13, "y": 20}, "placedAt": 37, "dueAt": 40, "explodedAt": 40, "sourceBubbleId": null},
+      {"id": 29, "ownerId": 1, "position": {"x": 8, "y": 0}, "placedAt": 43, "dueAt": 46, "explodedAt": 46, "sourceBubbleId": null},
+      {"id": 30, "ownerId": 2, "position": {"x": 20, "y": 8}, "placedAt": 43, "dueAt": 46, "explodedAt": 46, "sourceBubbleId": null},
+      {"id": 31, "ownerId": 3, "position": {"x": 0, "y": 12}, "placedAt": 43, "dueAt": 46, "explodedAt": 46, "sourceBubbleId": null},
+      {"id": 32, "ownerId": 4, "position": {"x": 12, "y": 20}, "placedAt": 43, "dueAt": 46, "explodedAt": 46, "sourceBubbleId": null},
+      {"id": 33, "ownerId": 1, "position": {"x": 9, "y": 0}, "placedAt": 49, "dueAt": 52, "explodedAt": 52, "sourceBubbleId": null},
+      {"id": 34, "ownerId": 2, "position": {"x": 20, "y": 9}, "placedAt": 49, "dueAt": 52, "explodedAt": 52, "sourceBubbleId": null},
+      {"id": 35, "ownerId": 3, "position": {"x": 0, "y": 11}, "placedAt": 49, "dueAt": 52, "explodedAt": 52, "sourceBubbleId": null},
+      {"id": 36, "ownerId": 4, "position": {"x": 11, "y": 20}, "placedAt": 49, "dueAt": 52, "explodedAt": 52, "sourceBubbleId": null},
+      {"id": 37, "ownerId": 1, "position": {"x": 10, "y": 0}, "placedAt": 55, "dueAt": 58, "explodedAt": 58, "sourceBubbleId": null},
+      {"id": 38, "ownerId": 2, "position": {"x": 20, "y": 10}, "placedAt": 55, "dueAt": 58, "explodedAt": 58, "sourceBubbleId": null},
+      {"id": 39, "ownerId": 3, "position": {"x": 0, "y": 10}, "placedAt": 55, "dueAt": 58, "explodedAt": 58, "sourceBubbleId": null},
+      {"id": 40, "ownerId": 4, "position": {"x": 10, "y": 20}, "placedAt": 55, "dueAt": 58, "explodedAt": 58, "sourceBubbleId": null},
+      {"id": 41, "ownerId": 1, "position": {"x": 11, "y": 0}, "placedAt": 61, "dueAt": 64, "explodedAt": 64, "sourceBubbleId": null},
+      {"id": 42, "ownerId": 2, "position": {"x": 20, "y": 11}, "placedAt": 61, "dueAt": 64, "explodedAt": 64, "sourceBubbleId": null},
+      {"id": 43, "ownerId": 3, "position": {"x": 0, "y": 9}, "placedAt": 61, "dueAt": 64, "explodedAt": 64, "sourceBubbleId": null},
+      {"id": 44, "ownerId": 4, "position": {"x": 9, "y": 20}, "placedAt": 61, "dueAt": 64, "explodedAt": 64, "sourceBubbleId": null},
+      {"id": 45, "ownerId": 1, "position": {"x": 12, "y": 0}, "placedAt": 67, "dueAt": 70, "explodedAt": 70, "sourceBubbleId": null},
+      {"id": 46, "ownerId": 2, "position": {"x": 20, "y": 12}, "placedAt": 67, "dueAt": 70, "explodedAt": 70, "sourceBubbleId": null},
+      {"id": 47, "ownerId": 3, "position": {"x": 0, "y": 8}, "placedAt": 67, "dueAt": 70, "explodedAt": 70, "sourceBubbleId": null},
+      {"id": 48, "ownerId": 4, "position": {"x": 8, "y": 20}, "placedAt": 67, "dueAt": 70, "explodedAt": 70, "sourceBubbleId": null},
+      {"id": 49, "ownerId": 1, "position": {"x": 13, "y": 0}, "placedAt": 73, "dueAt": 76, "explodedAt": 76, "sourceBubbleId": null},
+      {"id": 50, "ownerId": 2, "position": {"x": 20, "y": 13}, "placedAt": 73, "dueAt": 76, "explodedAt": 76, "sourceBubbleId": null},
+      {"id": 51, "ownerId": 3, "position": {"x": 0, "y": 7}, "placedAt": 73, "dueAt": 76, "explodedAt": 76, "sourceBubbleId": null},
+      {"id": 52, "ownerId": 4, "position": {"x": 7, "y": 20}, "placedAt": 73, "dueAt": 76, "explodedAt": 76, "sourceBubbleId": null},
+      {"id": 53, "ownerId": 1, "position": {"x": 14, "y": 0}, "placedAt": 79, "dueAt": 82, "explodedAt": 82, "sourceBubbleId": null},
+      {"id": 54, "ownerId": 2, "position": {"x": 20, "y": 14}, "placedAt": 79, "dueAt": 82, "explodedAt": 82, "sourceBubbleId": null},
+      {"id": 55, "ownerId": 3, "position": {"x": 0, "y": 6}, "placedAt": 79, "dueAt": 82, "explodedAt": 82, "sourceBubbleId": null},
+      {"id": 56, "ownerId": 4, "position": {"x": 6, "y": 20}, "placedAt": 79, "dueAt": 82, "explodedAt": 82, "sourceBubbleId": null},
+      {"id": 57, "ownerId": 1, "position": {"x": 15, "y": 0}, "placedAt": 85, "dueAt": 88, "explodedAt": 88, "sourceBubbleId": null},
+      {"id": 58, "ownerId": 2, "position": {"x": 20, "y": 15}, "placedAt": 85, "dueAt": 88, "explodedAt": 88, "sourceBubbleId": null},
+      {"id": 59, "ownerId": 3, "position": {"x": 0, "y": 5}, "placedAt": 85, "dueAt": 88, "explodedAt": 88, "sourceBubbleId": null},
+      {"id": 60, "ownerId": 4, "position": {"x": 5, "y": 20}, "placedAt": 85, "dueAt": 88, "explodedAt": 88, "sourceBubbleId": null},
+      {"id": 61, "ownerId": 1, "position": {"x": 16, "y": 0}, "placedAt": 91, "dueAt": 94, "explodedAt": 94, "sourceBubbleId": null},
+      {"id": 62, "ownerId": 2, "position": {"x": 20, "y": 16}, "placedAt": 91, "dueAt": 94, "explodedAt": 94, "sourceBubbleId": null},
+      {"id": 63, "ownerId": 3, "position": {"x": 0, "y": 4}, "placedAt": 91, "dueAt": 94, "explodedAt": 94, "sourceBubbleId": null},
+      {"id": 64, "ownerId": 4, "position": {"x": 4, "y": 20}, "placedAt": 91, "dueAt": 94, "explodedAt": 94, "sourceBubbleId": null},
+      {"id": 65, "ownerId": 1, "position": {"x": 17, "y": 0}, "placedAt": 97, "dueAt": 100, "explodedAt": 100, "sourceBubbleId": null},
+      {"id": 66, "ownerId": 2, "position": {"x": 20, "y": 17}, "placedAt": 97, "dueAt": 100, "explodedAt": 100, "sourceBubbleId": null},
+      {"id": 67, "ownerId": 3, "position": {"x": 0, "y": 3}, "placedAt": 97, "dueAt": 100, "explodedAt": 100, "sourceBubbleId": null},
+      {"id": 68, "ownerId": 4, "position": {"x": 3, "y": 20}, "placedAt": 97, "dueAt": 100, "explodedAt": 100, "sourceBubbleId": null},
+      {"id": 69, "ownerId": 1, "position": {"x": 20, "y": 0}, "placedAt": 105, "dueAt": 108, "explodedAt": 108, "sourceBubbleId": null},
+      {"id": 70, "ownerId": 2, "position": {"x": 20, "y": 20}, "placedAt": 105, "dueAt": 108, "explodedAt": 108, "sourceBubbleId": null},
+      {"id": 71, "ownerId": 4, "position": {"x": 0, "y": 20}, "placedAt": 105, "dueAt": 108, "explodedAt": 108, "sourceBubbleId": null}
+    ],
+    "destroyedCrates": [
+      {"x": 2, "y": 0},
+      {"x": 3, "y": 0},
+      {"x": 4, "y": 0},
+      {"x": 5, "y": 0},
+      {"x": 6, "y": 0},
+      {"x": 7, "y": 0},
+      {"x": 8, "y": 0},
+      {"x": 9, "y": 0},
+      {"x": 10, "y": 0},
+      {"x": 11, "y": 0},
+      {"x": 12, "y": 0},
+      {"x": 13, "y": 0},
+      {"x": 14, "y": 0},
+      {"x": 15, "y": 0},
+      {"x": 16, "y": 0},
+      {"x": 17, "y": 0},
+      {"x": 18, "y": 0},
+      {"x": 2, "y": 1},
+      {"x": 4, "y": 1},
+      {"x": 6, "y": 1},
+      {"x": 8, "y": 1},
+      {"x": 10, "y": 1},
+      {"x": 12, "y": 1},
+      {"x": 14, "y": 1},
+      {"x": 16, "y": 1},
+      {"x": 0, "y": 2},
+      {"x": 19, "y": 2},
+      {"x": 20, "y": 2},
+      {"x": 0, "y": 3},
+      {"x": 20, "y": 3},
+      {"x": 0, "y": 4},
+      {"x": 1, "y": 4},
+      {"x": 19, "y": 4},
+      {"x": 20, "y": 4},
+      {"x": 0, "y": 5},
+      {"x": 20, "y": 5},
+      {"x": 0, "y": 6},
+      {"x": 1, "y": 6},
+      {"x": 19, "y": 6},
+      {"x": 20, "y": 6},
+      {"x": 0, "y": 7},
+      {"x": 20, "y": 7},
+      {"x": 0, "y": 8},
+      {"x": 1, "y": 8},
+      {"x": 19, "y": 8},
+      {"x": 20, "y": 8},
+      {"x": 0, "y": 9},
+      {"x": 20, "y": 9},
+      {"x": 0, "y": 10},
+      {"x": 1, "y": 10},
+      {"x": 19, "y": 10},
+      {"x": 20, "y": 10},
+      {"x": 0, "y": 11},
+      {"x": 20, "y": 11},
+      {"x": 0, "y": 12},
+      {"x": 1, "y": 12},
+      {"x": 19, "y": 12},
+      {"x": 20, "y": 12},
+      {"x": 0, "y": 13},
+      {"x": 20, "y": 13},
+      {"x": 0, "y": 14},
+      {"x": 1, "y": 14},
+      {"x": 19, "y": 14},
+      {"x": 20, "y": 14},
+      {"x": 0, "y": 15},
+      {"x": 20, "y": 15},
+      {"x": 0, "y": 16},
+      {"x": 1, "y": 16},
+      {"x": 19, "y": 16},
+      {"x": 20, "y": 16},
+      {"x": 0, "y": 17},
+      {"x": 20, "y": 17},
+      {"x": 0, "y": 18},
+      {"x": 1, "y": 18},
+      {"x": 20, "y": 18},
+      {"x": 4, "y": 19},
+      {"x": 6, "y": 19},
+      {"x": 8, "y": 19},
+      {"x": 10, "y": 19},
+      {"x": 12, "y": 19},
+      {"x": 14, "y": 19},
+      {"x": 16, "y": 19},
+      {"x": 18, "y": 19},
+      {"x": 2, "y": 20},
+      {"x": 3, "y": 20},
+      {"x": 4, "y": 20},
+      {"x": 5, "y": 20},
+      {"x": 6, "y": 20},
+      {"x": 7, "y": 20},
+      {"x": 8, "y": 20},
+      {"x": 9, "y": 20},
+      {"x": 10, "y": 20},
+      {"x": 11, "y": 20},
+      {"x": 12, "y": 20},
+      {"x": 13, "y": 20},
+      {"x": 14, "y": 20},
+      {"x": 15, "y": 20},
+      {"x": 16, "y": 20},
+      {"x": 17, "y": 20},
+      {"x": 18, "y": 20}
+    ],
+    "deadPlacementSkips": 0,
+    "ignoredDeadActions": 0
+  }
+}

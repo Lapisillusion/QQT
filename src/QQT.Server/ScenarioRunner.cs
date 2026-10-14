@@ -12,7 +12,8 @@ namespace QQT.Server;
 public sealed class ScenarioRunner : IAsyncDisposable
 {
     private readonly GameSimulation _world = new();
-    private readonly SimulationEvent[] _history = ArrayPool<SimulationEvent>.Shared.Rent(256);
+    private readonly SimulationEvent[] _history;
+    private readonly int _historyCapacity;
     private readonly ConcurrentDictionary<int, UiPeer> _peers = new();
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly ScenarioOptions _options;
@@ -29,6 +30,10 @@ public sealed class ScenarioRunner : IAsyncDisposable
     public ScenarioRunner(ScenarioOptions options, SimulationLogger log, ObjectPool<JsonMessageBuffer> messages, IHostApplicationLifetime lifetime)
     {
         _options = options; _log = log; _messages = messages; _stopping = lifetime.ApplicationStopping;
+        // 每轮事件上界由核心统一定义；按允许轮数预留，避免长脚本被短场景容量截断。
+        // 本 runner 唯一持有历史数组，跨重跑复用，仅在任务和发送完成后的 DisposeAsync 归还。
+        _historyCapacity = checked(options.MaxScriptTicks * GameSimulation.MaxEventsPerTick);
+        _history = ArrayPool<SimulationEvent>.Shared.Rent(_historyCapacity);
     }
 
     public async Task<bool> StartAsync(bool paced = true)
@@ -128,7 +133,7 @@ public sealed class ScenarioRunner : IAsyncDisposable
     {
         foreach (var item in _world.Events)
         {
-            if (_historyCount >= 256) throw new InvalidOperationException("M0 日志超出固定场景容量。");
+            if (_historyCount >= _historyCapacity) throw new InvalidOperationException("脚本事件历史超出按允许轮数预留的容量。");
             _history[_historyCount++] = item;
             _log.Write(_runId, item);
         }

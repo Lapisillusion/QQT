@@ -26,6 +26,7 @@ dotnet run --project src/QQT.Server/QQT.Server.csproj
 - [scripts/m0.json](scripts/m0.json)：原四轮安全场景，最终四人存活。
 - [scripts/m0-death.json](scripts/m0-death.json)：六轮死亡场景，验证死亡只发生一次、取消同刻放置和后续动作、已放泡泡继续爆炸。
 - [scripts/m0-chain-victory.json](scripts/m0-chain-victory.json)：声明六轮，在 t=4 玩家 3 获胜后停止，保留未引爆泡泡。
+- [scripts/m0-perimeter-clear.json](scripts/m0-perimeter-clear.json)：108 轮，四人各清一条外边，最后玩家 1、2、4 自爆，玩家 3 获胜。
 - 每轮声明四人的方向和最多一个放置点；已死亡玩家的预设动作只记录并忽略。`expected` 声明玩家最终位置／死亡时刻、死亡时遗留泡泡数、泡泡实际放置／爆炸时间、被毁箱子和动作取消次数。
 - [appsettings.json](src/QQT.Server/appsettings.json)：监听地址、脚本路径、推进／动画时长、日志分类级别和消息池参数。
 - [TODO.md](TODO.md)：未指定工程配置的合法初值和后续范围。
@@ -103,3 +104,20 @@ dotnet run --project src/QQT.Core.Checks/QQT.Core.Checks.csproj -- E:/Project/Co
 ```
 
 输入路径须为绝对路径。检查范围 3 射线穿透、墙／箱子截断和旧地图、同格连锁去重、胜者放置取消、同批全灭平局、结束后推进拒绝及重置。实际日志、浏览器完整播放和重跑证据见 [连锁与即时获胜验收记录](docs/M0连锁与即时获胜验收记录.md)。
+
+## 四边清理场景
+
+从仓库根构建后执行完整日志验收：
+
+```powershell
+dotnet build QQT.sln
+dotnet src/QQT.Server/bin/Debug/net10.0/QQT.Server.dll --verify --script scripts/m0-perimeter-clear.json
+```
+
+展示 UI 时去掉 `--verify`，浏览器打开本机 5080 端口并点击开始。默认每轮 1 秒，完整运行约 108 秒。
+
+P1 负责上边 A1→U1，P2 负责右边 U1→U21，P3 负责左边 A21→A1，P4 负责下边 U21→A21。t=100 清完四边的 68 个箱子，爆炸同时波及 32 个内侧箱子。t=105 四人到达各边终点，第 106 轮起点（仍为 t=105）玩家 1、2、4 放置泡泡并原地等待，t=108 自爆，P3 在 A1 获胜。最终放置／引爆均为 71、箱子 229、硬墙 100、泡泡 0。
+
+此场景沿用固定速度 1、范围 1 和寿命 3。用户已授权将 `Scenario.MaxScriptTicks` 从 8 提高到 128；事件历史按允许轮数乘单轮上界 96 从数组池预留，默认有效容量 12288，不再固定为 256。该轮数上限是验证工具容量，不是竞技 500 tick 上限。默认脚本仍为 `scripts/m0.json`。
+
+实际四个脚本日志回归、108 轮浏览器播放与重跑结果见 [四边清理验收记录](docs/M0四边清理脚本验收记录.md)。
