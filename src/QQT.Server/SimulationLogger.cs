@@ -5,7 +5,7 @@ namespace QQT.Server;
 /// <summary>Core 只产生值事件；宿主将同一事件映射到分类诊断日志。</summary>
 public sealed partial class SimulationLogger
 {
-    private readonly ILogger _tick, _movement, _bubble, _explosion, _map, _script, _death;
+    private readonly ILogger _tick, _movement, _bubble, _explosion, _map, _script, _death, _match;
     public SimulationLogger(ILoggerFactory factory)
     {
         _tick = factory.CreateLogger("QQT.Simulation.Tick");
@@ -15,6 +15,7 @@ public sealed partial class SimulationLogger
         _map = factory.CreateLogger("QQT.Simulation.Tick.Map");
         _death = factory.CreateLogger("QQT.Simulation.Tick.Death");
         _script = factory.CreateLogger("QQT.Script");
+        _match = factory.CreateLogger("QQT.Simulation.Match");
     }
     public void Started(string runId, string name) => ScriptStarted(_script, runId, name);
     public void TickStarted(string runId, int tick) => BeginTick(_tick, runId, tick);
@@ -33,7 +34,9 @@ public sealed partial class SimulationLogger
                 break;
             case EventKind.Death: Died(_death, runId, e.Tick, e.PlayerId, e.Position.X, e.Position.Y, e.Value); break;
             case EventKind.ActionIgnored: Ignored(_death, runId, e.Tick, e.PlayerId, e.Value); break;
-            case EventKind.Exploded: Exploded(_explosion, runId, e.Tick, e.BubbleId, e.Position.X, e.Position.Y); break;
+            case EventKind.Exploded: Exploded(_explosion, runId, e.Tick, e.PlayerId, e.BubbleId, e.Position.X, e.Position.Y, e.Value); break;
+            case EventKind.Chained: Chained(_explosion, runId, e.Tick, e.PlayerId, e.BubbleId, e.Value, e.Position.X, e.Position.Y); break;
+            case EventKind.MatchEnded: Ended(_match, runId, e.Tick, e.PlayerId, e.Value); break;
             case EventKind.Covered: Covered(_explosion, runId, e.Tick, e.BubbleId, e.Position.X, e.Position.Y); break;
             case EventKind.CrateDestroyed: Destroyed(_map, runId, e.Tick, e.Position.X, e.Position.Y); break;
             case EventKind.Safety: Safety(_explosion, runId, e.Tick, e.PlayerId, e.Position.X, e.Position.Y, e.Success); break;
@@ -45,6 +48,8 @@ public sealed partial class SimulationLogger
         Result(_script, runId, result.Passed, result.Tick, result.Crates, result.Walls, result.Bubbles, result.SafePlayers,
             result.Placed, result.Exploded, result.Destroyed, result.MapMatches);
         DeathValidation(_script, runId, result.DeadPlayers, result.Deaths, result.PlayersMatch, result.BubblesMatch, result.ActionsMatch);
+        foreach (var bubble in world.Bubbles) FinalBubble(_script, runId, bubble.Id, bubble.OwnerId, bubble.Position.X, bubble.Position.Y, bubble.PlacedAt, bubble.DueAt);
+        OutcomeValidation(_script, runId, world.Ended, world.WinnerId, world.EndTick, result.OutcomeMatches);
         if (!result.Passed) Failed(_script, runId);
     }
 
@@ -62,8 +67,10 @@ public sealed partial class SimulationLogger
     private static partial void Placed(ILogger logger, string runId, int tick, int playerId, int bubbleId, int x, int y, int dueAt);
     [LoggerMessage(301, LogLevel.Debug, "PLACEMENT_SKIPPED RunId={RunId} Tick={Tick} PlayerId={PlayerId} Position=({X},{Y})")]
     private static partial void Skipped(ILogger logger, string runId, int tick, int playerId, int x, int y);
-    [LoggerMessage(400, LogLevel.Information, "BUBBLE_EXPLODED RunId={RunId} Tick={Tick} BubbleId={BubbleId} Position=({X},{Y})")]
-    private static partial void Exploded(ILogger logger, string runId, int tick, int bubbleId, int x, int y);
+    [LoggerMessage(400, LogLevel.Information, "BUBBLE_EXPLODED RunId={RunId} Tick={Tick} PlayerId={PlayerId} BubbleId={BubbleId} Position=({X},{Y}) DueAt={DueAt}")]
+    private static partial void Exploded(ILogger logger, string runId, int tick, int playerId, int bubbleId, int x, int y, int dueAt);
+    [LoggerMessage(403, LogLevel.Information, "BUBBLE_CHAINED RunId={RunId} Tick={Tick} PlayerId={PlayerId} BubbleId={BubbleId} SourceBubbleId={SourceBubbleId} Position=({X},{Y})")]
+    private static partial void Chained(ILogger logger, string runId, int tick, int playerId, int bubbleId, int sourceBubbleId, int x, int y);
     [LoggerMessage(401, LogLevel.Trace, "BLAST_CELL RunId={RunId} Tick={Tick} BubbleId={BubbleId} Position=({X},{Y})")]
     private static partial void Covered(ILogger logger, string runId, int tick, int bubbleId, int x, int y);
     [LoggerMessage(402, LogLevel.Information, "SAFETY RunId={RunId} Tick={Tick} PlayerId={PlayerId} Position=({X},{Y}) Safe={Safe}")]
@@ -78,6 +85,12 @@ public sealed partial class SimulationLogger
     private static partial void Failed(ILogger logger, string runId);
     [LoggerMessage(603, LogLevel.Error, "SCENARIO_ERROR RunId={RunId}")]
     private static partial void ScriptError(ILogger logger, Exception exception, string runId);
+    [LoggerMessage(604, LogLevel.Information, "FINAL_BUBBLE RunId={RunId} BubbleId={BubbleId} OwnerId={OwnerId} Position=({X},{Y}) PlacedAt={PlacedAt} DueAt={DueAt}")]
+    private static partial void FinalBubble(ILogger logger, string runId, int bubbleId, int ownerId, int x, int y, int placedAt, int dueAt);
+    [LoggerMessage(605, LogLevel.Information, "OUTCOME_VALIDATION RunId={RunId} Ended={Ended} WinnerId={WinnerId} EndTick={EndTick} OutcomeMatches={OutcomeMatches}")]
+    private static partial void OutcomeValidation(ILogger logger, string runId, bool ended, int? winnerId, int? endTick, bool outcomeMatches);
+    [LoggerMessage(800, LogLevel.Information, "MATCH_ENDED RunId={RunId} Tick={Tick} WinnerId={WinnerId} Survivors={Survivors}; WinnerId=0 means draw")]
+    private static partial void Ended(ILogger logger, string runId, int tick, int winnerId, int survivors);
     [LoggerMessage(700, LogLevel.Information, "PLAYER_DIED RunId={RunId} Tick={Tick} PlayerId={PlayerId} Position=({X},{Y}) OwnedBubblesRemaining={OwnedBubbles}")]
     private static partial void Died(ILogger logger, string runId, int tick, int playerId, int x, int y, int ownedBubbles);
     [LoggerMessage(701, LogLevel.Information, "DEAD_PLACEMENT_CANCELLED RunId={RunId} Tick={Tick} PlayerId={PlayerId} Position=({X},{Y})")]

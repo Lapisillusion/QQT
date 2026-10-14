@@ -2,7 +2,7 @@ namespace QQT.Core;
 
 public enum Cell : byte { Empty, Wall, Crate }
 public enum Direction : byte { Wait, Up, Down, Left, Right }
-public enum EventKind : byte { Move, Blocked, Placed, Exploded, Covered, CrateDestroyed, Safety, PlacementSkipped, Death, ActionIgnored }
+public enum EventKind : byte { Move, Blocked, Placed, Exploded, Covered, CrateDestroyed, Safety, PlacementSkipped, Death, ActionIgnored, Chained, MatchEnded }
 public enum SkipReason : byte { None, Dead, NotReached, Capacity }
 
 public readonly record struct Position(int X, int Y)
@@ -30,4 +30,4 @@ public readonly record struct Bubble(int Id, int OwnerId, Position Position, int
 public readonly record struct Move(int PlayerId, Position From, Position To);
 public readonly record struct PlayerAction(int PlayerId, Direction Direction, Position? Placement);
 public readonly record struct SimulationEvent(EventKind Kind, int Tick, int PlayerId, int BubbleId, Position Position, Position From, bool Success, int Value = 0, SkipReason Reason = SkipReason.None);
-public readonly record struct ValidationResult(bool Passed, int Tick, int Crates, int Walls, int Bubbles, int SafePlayers, int Placed, int Exploded, int Destroyed, bool MapMatches, int DeadPlayers, int Deaths, bool PlayersMatch, bool BubblesMatch, bool ActionsMatch);
+public readonly record struct ValidationResult(bool Passed, int Tick, int Crates, int Walls, int Bubbles, int SafePlayers, int Placed, int Exploded, int Destroyed, bool MapMatches, int DeadPlayers, int Deaths, bool PlayersMatch, bool BubblesMatch, bool ActionsMatch, bool OutcomeMatches);

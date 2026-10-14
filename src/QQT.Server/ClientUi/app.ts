@@ -5,7 +5,7 @@ type Player = { id: number; position: Position; hit: boolean; alive: boolean; de
 type Bubble = { id: number; ownerId: number; position: Position; dueAt: number };
 type Move = { playerId: number; from: Position; to: Position };
 type GameEvent = { sequence: number; kind: string; tick: number; playerId: number; bubbleId: number; position: Position; from: Position; success: boolean; value: number; reason: string };
-type Frame = { type: "frame"; runId: string; name: string; totalTicks: number; status: string; error: string; tick: number; size: number; durationMs: number; animate: boolean; terrain: number[]; players: Player[]; bubbles: Bubble[]; moves: Move[]; events: GameEvent[]; crateCount: number; bubbleCount: number; result?: { passed: boolean; safePlayers: number; walls: number; placed: number; exploded: number; destroyed: number; mapMatches: boolean; deadPlayers: number; deaths: number } };
+type Frame = { type: "frame"; runId: string; name: string; totalTicks: number; status: string; error: string; tick: number; size: number; durationMs: number; animate: boolean; terrain: number[]; players: Player[]; bubbles: Bubble[]; moves: Move[]; events: GameEvent[]; crateCount: number; bubbleCount: number; ended: boolean; winnerId: number | null; endTick: number | null; result?: { passed: boolean; safePlayers: number; walls: number; placed: number; exploded: number; destroyed: number; mapMatches: boolean; deadPlayers: number; deaths: number } };
 
 function element<T extends HTMLElement>(id: string): T { return document.getElementById(id) as T; }
 const canvas = element<HTMLCanvasElement>("map");
@@ -42,6 +42,8 @@ function eventText(e: GameEvent): string {
     case "blocked": return `玩家 ${e.playerId}：${gridName(e.position)} 被阻挡`;
     case "placed": return `玩家 ${e.playerId} 在 ${gridName(e.position)} 放置泡泡 #${e.bubbleId}，t=${e.tick + 3} 到期`;
     case "exploded": return `泡泡 #${e.bubbleId} 在 ${gridName(e.position)} 爆炸`;
+    case "chained": return `泡泡 #${e.value} 连锁引爆 ${gridName(e.position)} 的泡泡 #${e.bubbleId}`;
+    case "matchEnded": return e.playerId > 0 ? `对局结束：玩家 ${e.playerId} 获胜` : "对局结束：全部淘汰，平局";
     case "crateDestroyed": return `${gridName(e.position)} 箱子销毁`;
     case "safety": return `玩家 ${e.playerId} 在 ${gridName(e.position)}：${e.success ? "安全" : "受击"}`;
     case "death": return `玩家 ${e.playerId} 在 ${gridName(e.position)} 死亡，保留 ${e.value} 颗在场泡泡`;
@@ -58,7 +60,7 @@ function applyFrame(frame: Frame, now: number): void {
   totalTicks.textContent = frame.totalTicks > 0 ? String(frame.totalTicks) : "—";
   scenarioTitle.textContent = frame.name;
   scenarioFooter.textContent = frame.totalTicks > 0 ? `M0 · ${frame.totalTicks} 轮脚本` : "M0 · 预设脚本";
-  progress.style.width = `${frame.totalTicks > 0 ? frame.tick / frame.totalTicks * 100 : 0}%`;
+  progress.style.width = `${frame.ended ? 100 : frame.totalTicks > 0 ? frame.tick / frame.totalTicks * 100 : 0}%`;
   bubbles.textContent = String(frame.bubbleCount);
   crates.textContent = String(frame.crateCount);
   let safeCount = 0;
@@ -71,9 +73,11 @@ function applyFrame(frame: Frame, now: number): void {
   }
   safe.textContent = String(safeCount);
   status.textContent = frame.status === "running" ? "验证进行中" : frame.status === "passed" ? "验证通过" : frame.status === "failed" ? "验证失败" : frame.status === "error" ? "运行错误" : "准备就绪";
+  const outcome = frame.ended ? `${frame.winnerId === null ? "全部淘汰，平局" : `玩家 ${frame.winnerId} 获胜`}（t=${frame.endTick}）` : "";
+  if (outcome) status.textContent += ` · ${outcome}`;
   result.className = "result";
   if (frame.status === "passed") {
-    result.textContent = `验证通过：存活 ${frame.result!.safePlayers} 人，死亡 ${frame.result!.deadPlayers} 人，${frame.result!.exploded} 颗泡泡已爆炸，${frame.result!.destroyed} 个指定箱子已销毁。`; result.classList.add("success");
+    result.textContent = `验证通过：${outcome ? outcome + "；" : ""}存活 ${frame.result!.safePlayers} 人，死亡 ${frame.result!.deadPlayers} 人，${frame.result!.exploded} 颗泡泡已爆炸，${frame.result!.destroyed} 个指定箱子已销毁。`; result.classList.add("success");
   } else if (frame.status === "failed" || frame.status === "error") {
     result.textContent = frame.error || "验证失败：请查看位置、计时和服务端日志。"; result.classList.add("failure");
   } else result.textContent = "运行后按脚本预期核对位置、死亡时刻和泡泡处理。";

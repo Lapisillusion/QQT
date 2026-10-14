@@ -96,7 +96,7 @@ public sealed class ScenarioRunner : IAsyncDisposable
                     _world.Advance(script.Round(tick));
                     StoreAndLogEvents();
                     _log.TickEnded(_runId, _world);
-                    if (tick == script.TotalTicks)
+                    if (_world.Ended || tick == script.TotalTicks)
                     {
                         _result = _world.Validate(script.Expected, _history.AsSpan(0, _historyCount));
                         _status = _result.Value.Passed ? "passed" : "failed";
@@ -105,6 +105,7 @@ public sealed class ScenarioRunner : IAsyncDisposable
                 }
                 finally { _gate.Release(); }
                 await PublishAsync(true);
+                if (_world.Ended) break;
             }
         }
         catch (OperationCanceledException) when (_stopping.IsCancellationRequested) { }
@@ -158,6 +159,9 @@ public sealed class ScenarioRunner : IAsyncDisposable
         w.WriteString("type", "frame"); w.WriteString("runId", _runId); w.WriteString("status", _status);
         w.WriteString("error", _error); w.WriteString("name", _scenarioName); w.WriteNumber("totalTicks", _totalTicks); w.WriteNumber("tick", _world.Tick); w.WriteNumber("size", GameSimulation.Size);
         w.WriteNumber("durationMs", _options.AnimationMilliseconds); w.WriteBoolean("animate", animate);
+        w.WriteBoolean("ended", _world.Ended);
+        if (_world.WinnerId is { } winner) w.WriteNumber("winnerId", winner); else w.WriteNull("winnerId");
+        if (_world.EndTick is { } endedAt) w.WriteNumber("endTick", endedAt); else w.WriteNull("endTick");
         w.WriteNumber("crateCount", _world.CrateCount); w.WriteNumber("bubbleCount", _world.BubbleCount);
         w.WriteStartArray("terrain");
         foreach (var cell in _world.Terrain) w.WriteNumberValue((int)cell);
@@ -173,7 +177,7 @@ public sealed class ScenarioRunner : IAsyncDisposable
         foreach (var b in _world.Bubbles)
         {
             w.WriteStartObject(); w.WriteNumber("id", b.Id); w.WriteNumber("ownerId", b.OwnerId); WritePosition(w, "position", b.Position);
-            w.WriteNumber("placedAt", b.PlacedAt); w.WriteNumber("dueAt", b.DueAt); w.WriteNumber("range", 1); w.WriteEndObject();
+            w.WriteNumber("placedAt", b.PlacedAt); w.WriteNumber("dueAt", b.DueAt); w.WriteNumber("range", GameSimulation.ExplosionRange); w.WriteEndObject();
         }
         w.WriteEndArray(); w.WriteStartArray("moves");
         if (animate) foreach (var m in _world.Moves)
@@ -194,7 +198,7 @@ public sealed class ScenarioRunner : IAsyncDisposable
             w.WriteStartObject("result"); w.WriteBoolean("passed", r.Passed); w.WriteNumber("safePlayers", r.SafePlayers);
             w.WriteNumber("walls", r.Walls); w.WriteNumber("placed", r.Placed); w.WriteNumber("exploded", r.Exploded);
             w.WriteNumber("destroyed", r.Destroyed); w.WriteBoolean("mapMatches", r.MapMatches); w.WriteNumber("deadPlayers", r.DeadPlayers);
-            w.WriteNumber("deaths", r.Deaths); w.WriteBoolean("playersMatch", r.PlayersMatch); w.WriteBoolean("bubblesMatch", r.BubblesMatch); w.WriteBoolean("actionsMatch", r.ActionsMatch); w.WriteEndObject();
+            w.WriteNumber("deaths", r.Deaths); w.WriteBoolean("playersMatch", r.PlayersMatch); w.WriteBoolean("bubblesMatch", r.BubblesMatch); w.WriteBoolean("actionsMatch", r.ActionsMatch); w.WriteBoolean("outcomeMatches", r.OutcomeMatches); w.WriteEndObject();
         }
         w.WriteEndObject(); w.Flush();
     }
@@ -206,6 +210,7 @@ public sealed class ScenarioRunner : IAsyncDisposable
     {
         EventKind.Move => "move", EventKind.Blocked => "blocked", EventKind.Placed => "placed",
         EventKind.Exploded => "exploded", EventKind.Covered => "covered", EventKind.CrateDestroyed => "crateDestroyed",
+        EventKind.Chained => "chained", EventKind.MatchEnded => "matchEnded",
         EventKind.Safety => "safety", EventKind.Death => "death", EventKind.ActionIgnored => "actionIgnored", _ => "placementSkipped"
     };
     public async ValueTask DisposeAsync()

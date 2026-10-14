@@ -1,0 +1,65 @@
+{
+  "name": "连锁爆炸、同批淘汰与即时获胜验证",
+  "totalTicks": 6,
+  "rounds": [
+    { "roundId": 1, "actions": [
+      {"playerId": 1, "direction": "right", "placements": [{"x": 1, "y": 0}]},
+      {"playerId": 2, "direction": "left", "placements": [{"x": 19, "y": 0}]},
+      {"playerId": 3, "direction": "right", "placements": [{"x": 1, "y": 20}]},
+      {"playerId": 4, "direction": "left", "placements": [{"x": 19, "y": 20}]}
+    ]},
+    { "roundId": 2, "actions": [
+      {"playerId": 1, "direction": "left", "placements": [{"x": 0, "y": 0}]},
+      {"playerId": 2, "direction": "right", "placements": [{"x": 20, "y": 0}]},
+      {"playerId": 3, "direction": "left", "placements": []},
+      {"playerId": 4, "direction": "right", "placements": []}
+    ]},
+    { "roundId": 3, "actions": [
+      {"playerId": 1, "direction": "down", "placements": [{"x": 0, "y": 1}]},
+      {"playerId": 2, "direction": "down", "placements": [{"x": 20, "y": 1}]},
+      {"playerId": 3, "direction": "up", "placements": [{"x": 0, "y": 19}]},
+      {"playerId": 4, "direction": "up", "placements": []}
+    ]},
+    { "roundId": 4, "actions": [
+      {"playerId": 1, "direction": "wait", "placements": []},
+      {"playerId": 2, "direction": "wait", "placements": []},
+      {"playerId": 3, "direction": "wait", "placements": []},
+      {"playerId": 4, "direction": "down", "placements": [{"x": 20, "y": 20}]}
+    ]},
+    { "roundId": 5, "actions": [
+      {"playerId": 1, "direction": "wait", "placements": []},
+      {"playerId": 2, "direction": "wait", "placements": []},
+      {"playerId": 3, "direction": "down", "placements": []},
+      {"playerId": 4, "direction": "wait", "placements": []}
+    ]},
+    { "roundId": 6, "actions": [
+      {"playerId": 1, "direction": "wait", "placements": []},
+      {"playerId": 2, "direction": "wait", "placements": []},
+      {"playerId": 3, "direction": "wait", "placements": []},
+      {"playerId": 4, "direction": "wait", "placements": []}
+    ]}
+  ],
+  "expected": {
+    "end": {"tick": 4, "winnerId": 3},
+    "players": [
+      {"playerId": 1, "position": {"x": 0, "y": 1}, "deathTick": 4, "ownedBubblesAtDeath": 0},
+      {"playerId": 2, "position": {"x": 20, "y": 1}, "deathTick": 4, "ownedBubblesAtDeath": 0},
+      {"playerId": 3, "position": {"x": 0, "y": 19}, "deathTick": null, "ownedBubblesAtDeath": 0},
+      {"playerId": 4, "position": {"x": 20, "y": 20}, "deathTick": 4, "ownedBubblesAtDeath": 0}
+    ],
+    "bubbles": [
+      {"id": 1, "ownerId": 1, "position": {"x": 1, "y": 0}, "placedAt": 1, "dueAt": 4, "explodedAt": 4, "sourceBubbleId": null},
+      {"id": 2, "ownerId": 2, "position": {"x": 19, "y": 0}, "placedAt": 1, "dueAt": 4, "explodedAt": 4, "sourceBubbleId": null},
+      {"id": 3, "ownerId": 3, "position": {"x": 1, "y": 20}, "placedAt": 1, "dueAt": 4, "explodedAt": 4, "sourceBubbleId": null},
+      {"id": 4, "ownerId": 4, "position": {"x": 19, "y": 20}, "placedAt": 1, "dueAt": 4, "explodedAt": 4, "sourceBubbleId": null},
+      {"id": 5, "ownerId": 1, "position": {"x": 0, "y": 0}, "placedAt": 2, "dueAt": 5, "explodedAt": 4, "sourceBubbleId": 1},
+      {"id": 6, "ownerId": 2, "position": {"x": 20, "y": 0}, "placedAt": 2, "dueAt": 5, "explodedAt": 4, "sourceBubbleId": 2},
+      {"id": 7, "ownerId": 1, "position": {"x": 0, "y": 1}, "placedAt": 3, "dueAt": 6, "explodedAt": 4, "sourceBubbleId": 5},
+      {"id": 8, "ownerId": 2, "position": {"x": 20, "y": 1}, "placedAt": 3, "dueAt": 6, "explodedAt": 4, "sourceBubbleId": 6},
+      {"id": 9, "ownerId": 3, "position": {"x": 0, "y": 19}, "placedAt": 3, "dueAt": 6, "explodedAt": null, "sourceBubbleId": null}
+    ],
+    "destroyedCrates": [{"x": 2, "y": 0}, {"x": 0, "y": 2}, {"x": 18, "y": 0}, {"x": 20, "y": 2}, {"x": 2, "y": 20}, {"x": 18, "y": 20}],
+    "deadPlacementSkips": 0,
+    "ignoredDeadActions": 0
+  }
+}

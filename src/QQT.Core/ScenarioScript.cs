@@ -95,8 +95,34 @@ public sealed class ScenarioScript : IDisposable
             int owner = bubble.GetProperty("ownerId").GetInt32();
             if (owner is < 1 or > 4) throw new InvalidDataException("预期泡泡归属非法。");
             ReadPosition(bubble.GetProperty("position"));
-            int placed = bubble.GetProperty("placedAt").GetInt32(), exploded = bubble.GetProperty("explodedAt").GetInt32();
-            if (placed < 0 || exploded < placed || exploded > TotalTicks) throw new InvalidDataException("预期泡泡时间非法。");
+            int placed = bubble.GetProperty("placedAt").GetInt32();
+            int? exploded = bubble.GetProperty("explodedAt").ValueKind == JsonValueKind.Null ? null : bubble.GetProperty("explodedAt").GetInt32();
+            if (placed < 0 || placed > TotalTicks || exploded < placed || exploded > TotalTicks) throw new InvalidDataException("预期泡泡时间非法。");
+            if (bubble.TryGetProperty("dueAt", out var due) && due.GetInt32() != placed + 3) throw new InvalidDataException("预定到期必须等于实际放置时刻加 3。");
+            if (bubble.TryGetProperty("sourceBubbleId", out var source) && source.ValueKind != JsonValueKind.Null &&
+                (source.GetInt32() < 1 || source.GetInt32() > expected.GetProperty("bubbles").GetArrayLength() || source.GetInt32() == id || exploded is null))
+                throw new InvalidDataException("预期连锁来源非法。");
+        }
+        if (expected.TryGetProperty("end", out var end))
+        {
+            int tick = end.GetProperty("tick").GetInt32();
+            var winner = end.GetProperty("winnerId");
+            if (tick < 1 || tick > TotalTicks || (winner.ValueKind != JsonValueKind.Null && winner.GetInt32() is < 1 or > 4))
+                throw new InvalidDataException("预期结束时刻或胜者非法。");
+            int survivors = 0, survivorId = 0;
+            foreach (var player in players.EnumerateArray())
+            {
+                var death = player.GetProperty("deathTick");
+                if (death.ValueKind == JsonValueKind.Null) { survivors++; survivorId = player.GetProperty("playerId").GetInt32(); }
+                else if (death.GetInt32() > tick) throw new InvalidDataException("预期死亡不能晚于结束。");
+            }
+            if ((winner.ValueKind == JsonValueKind.Null && survivors != 0) ||
+                (winner.ValueKind != JsonValueKind.Null && (survivors != 1 || survivorId != winner.GetInt32())))
+                throw new InvalidDataException("预期胜者与存活玩家不一致。");
+            foreach (var bubble in expected.GetProperty("bubbles").EnumerateArray())
+                if (bubble.GetProperty("placedAt").GetInt32() > tick ||
+                    (bubble.GetProperty("explodedAt").ValueKind != JsonValueKind.Null && bubble.GetProperty("explodedAt").GetInt32() > tick))
+                    throw new InvalidDataException("预期泡泡事件不能晚于结束。");
         }
         foreach (var point in expected.GetProperty("destroyedCrates").EnumerateArray()) ReadPosition(point);
         if (expected.GetProperty("deadPlacementSkips").GetInt32() < 0 || expected.GetProperty("ignoredDeadActions").GetInt32() < 0)
