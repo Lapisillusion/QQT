@@ -1,6 +1,6 @@
 # QQT · M0 模拟验证
 
-可运行的起步验证程序，当前开发分支为 `dev/m0-startup`。保留原四人安全与死亡脚本，新增连锁爆炸、同批淘汰和即时获胜验证。
+可运行的起步验证程序，当前开发分支为 `dev/m0-startup`。已实现精确分数时间、逐格移动与归属、跨线阻挡、强制回退、中心放置、途中连锁及即时终局。保留四份 M0 脚本，新增 39 份独立场景。
 
 普通 C# 模拟核心＋ASP.NET Core 服务端＋TypeScript/Canvas 浏览器 UI。前后端代码分开，页面资源与 UI WebSocket 由同一进程提供。没有真实 AI 客户端。
 
@@ -27,12 +27,12 @@ dotnet run --project src/QQT.Server/QQT.Server.csproj
 - [scripts/m0-death.json](scripts/m0-death.json)：六轮死亡场景，验证死亡只发生一次、取消同刻放置和后续动作、已放泡泡继续爆炸。
 - [scripts/m0-chain-victory.json](scripts/m0-chain-victory.json)：声明六轮，在 t=4 玩家 3 获胜后停止，保留未引爆泡泡。
 - [scripts/m0-perimeter-clear.json](scripts/m0-perimeter-clear.json)：108 轮，四人各清一条外边，最后玩家 1、2、4 自爆，玩家 3 获胜。
-- 每轮声明四人的方向和最多一个放置点；已死亡玩家的预设动作只记录并忽略。`expected` 声明玩家最终位置／死亡时刻、死亡时遗留泡泡数、泡泡实际放置／爆炸时间、被毁箱子和动作取消次数。
+- 每轮声明四人的方向和沿途中心放置列表（同轮同中心最多一颗）；已死亡玩家的预设动作只记录并忽略。`expected` 声明玩家最终位置／死亡时刻、死亡时遗留泡泡数、泡泡实际放置／爆炸时间、被毁箱子和动作取消次数。
 - [appsettings.json](src/QQT.Server/appsettings.json)：监听地址、脚本路径、推进／动画时长、日志分类级别和消息池参数。
 - [TODO.md](TODO.md)：未指定工程配置的合法初值和后续范围。
 - [AGENTS.md](AGENTS.md)：日志、池化、注释和关键路径验收规范。
 
-构建时脚本、配置和前端复制到输出目录。服务端从该目录读取资源，每次运行重新读取脚本；修改源脚本或源配置后，停止当前服务再构建／启动。当前路径是 M0 固定场景，支持连锁与同批淘汰后的即时胜负，尚不支持完整 AI 协议、道具、任意速度或 500 tick 上限。
+构建时脚本、配置和前端复制到输出目录。服务端从该目录读取资源，每次运行重新读取脚本；修改源脚本或源配置后，停止当前服务再构建／启动。不指定 initial 时沿用正式固定地图与默认参数；指定 initial 可运行空地图和自定义出生点、正整数速度、容量、范围、分数寿命的测试环境。尚不支持完整 AI 协议、道具或 500 tick 上限。
 
 ## 日志验收
 
@@ -61,7 +61,7 @@ SafePlayers=4 Placed=4 Exploded=4 Destroyed=4 MapMatches=True
 
 ## 范围与验收证据
 
-实现范围以 [M0 评估](docs/最小验证程序_M0范围评估.md) 为准。详细规则和后续首版设计见 [文档索引](docs/README.md)。本次已完成构建、实际脚本日志验收、浏览器完整运行及重跑；见 [M0 验收记录](docs/M0实施与验收记录.md)。
+最初范围见 [M0 评估](docs/最小验证程序_M0范围评估.md)，当前扩展范围与实机结果见 [精确时间验收记录](docs/精确时间实施与验收记录.md)。详细规则和后续首版设计见 [文档索引](docs/README.md)。本次已完成构建、实际脚本日志验收、浏览器完整运行及重跑；见 [M0 验收记录](docs/M0实施与验收记录.md)。
 
 ## 死亡场景
 
@@ -118,6 +118,31 @@ dotnet src/QQT.Server/bin/Debug/net10.0/QQT.Server.dll --verify --script scripts
 
 P1 负责上边 A1→U1，P2 负责右边 U1→U21，P3 负责左边 A21→A1，P4 负责下边 U21→A21。t=100 清完四边的 68 个箱子，爆炸同时波及 32 个内侧箱子。t=105 四人到达各边终点，第 106 轮起点（仍为 t=105）玩家 1、2、4 放置泡泡并原地等待，t=108 自爆，P3 在 A1 获胜。最终放置／引爆均为 71、箱子 229、硬墙 100、泡泡 0。
 
-此场景沿用固定速度 1、范围 1 和寿命 3。用户已授权将 `Scenario.MaxScriptTicks` 从 8 提高到 128；事件历史按允许轮数乘单轮上界 96 从数组池预留，默认有效容量 12288，不再固定为 256。该轮数上限是验证工具容量，不是竞技 500 tick 上限。默认脚本仍为 `scripts/m0.json`。
+此场景沿用固定速度 1、范围 1 和寿命 3。用户已授权将 `Scenario.MaxScriptTicks` 从 8 提高到 128；事件与轨迹缓冲以及历史按实际需要从数组池扩容，不再以原单轮 96 条或历史 12288 条作为上限。该轮数上限是验证工具容量，不是竞技 500 tick 上限。默认脚本仍为 `scripts/m0.json`。
 
 实际四个脚本日志回归、108 轮浏览器播放与重跑结果见 [四边清理验收记录](docs/M0四边清理脚本验收记录.md)。
+
+## 精确时间与独立测试环境
+
+[39 份脚本清单](docs/精确时间脚本验收清单.md)逐项对应讨论过的场景和边界，每份 JSON 自带初始条件、四人完整动作及独立预期。36 份不含箱子；另 3 份单箱补充脚本验证清除后不重启、同刻旧地图和后续地图传播。
+
+从仓库根目录运行快慢玩家阻挡与回退场景：
+
+```powershell
+npm.cmd run build:ui
+dotnet build QQT.sln
+dotnet src/QQT.Server/bin/Debug/net10.0/QQT.Server.dll --verify --script scripts/precise-13-fast-blocks-slow.json
+```
+
+去掉 `--verify` 可在浏览器播放；玩家状态提示显示实际速度、容量、范围、寿命和质点坐标。日志时间以 `1/10` 等精确分数显示，UI 消息的时间和质点坐标使用分子／分母对象，展示小数不参与裁决。
+
+批量执行全部新场景：
+
+```powershell
+Get-ChildItem scripts/precise-*.json | ForEach-Object {
+    dotnet src/QQT.Server/bin/Debug/net10.0/QQT.Server.dll --verify --script $_.FullName
+    if ($LASTEXITCODE -ne 0) { throw "脚本验收失败：$($_.Name)" }
+}
+```
+
+测试环境字段及检查点、事件断言说明见 [实施与验收记录](docs/精确时间实施与验收记录.md)。验证通过与竞技结束独立：未声明终局的脚本在指定轮数完成验收，现场可以仍有多人存活，不额外制造死亡来结束比赛。

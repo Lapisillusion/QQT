@@ -7,15 +7,19 @@ namespace QQT.Core;
 public sealed class ScenarioScript : IDisposable
 {
     private PlayerAction[]? _actions;
+    private Position[]? _placements;
     private JsonDocument? _document;
     public string Name { get; private set; } = "M0";
     public int TotalTicks { get; }
+    public JsonElement? Initial => _document!.RootElement.TryGetProperty("initial", out var initial) ? initial : null;
     public JsonElement Expected => _document?.RootElement.GetProperty("expected") ?? throw new ObjectDisposedException(nameof(ScenarioScript));
 
     private ScenarioScript(int totalTicks)
     {
         TotalTicks = totalTicks;
         _actions = ArrayPool<PlayerAction>.Shared.Rent(totalTicks * 4);
+        try { _placements = ArrayPool<Position>.Shared.Rent(checked(totalTicks * 4 * GameSimulation.Size)); }
+        catch { ArrayPool<PlayerAction>.Shared.Return(_actions, true); _actions = null; throw; }
     }
 
     public static ScenarioScript Load(string path, int maxTicks)
@@ -56,11 +60,16 @@ public sealed class ScenarioScript : IDisposable
                         _ => throw new InvalidDataException("移动方向非法。")
                     };
                     var placements = json.GetProperty("placements");
-                    if (placements.GetArrayLength() > 1)
-                        throw new InvalidDataException("M0 每次动作最多选择一个放置点。");
-                    Position? placement = null;
-                    if (placements.GetArrayLength() == 1) placement = ReadPosition(placements[0]);
-                    script._actions![r * 4 + id - 1] = new(id, direction, placement);
+                    int count = placements.GetArrayLength();
+                    if (count > GameSimulation.Size) throw new InvalidDataException("放置点超过直线路径的格数。");
+                    int offset = (r * 4 + id - 1) * GameSimulation.Size;
+                    for (int k = 0; k < count; k++)
+                    {
+                        var point = ReadPosition(placements[k]);
+                        for (int j = 0; j < k; j++) if (script._placements![offset + j] == point) throw new InvalidDataException("同轮放置点重复。");
+                        script._placements![offset + k] = point;
+                    }
+                    script._actions![r * 4 + id - 1] = new(id, direction, null) { Placements = script._placements.AsMemory(offset, count) };
                 }
             }
             script.CheckExpected();
@@ -77,56 +86,39 @@ public sealed class ScenarioScript : IDisposable
     {
         var expected = Expected;
         var players = expected.GetProperty("players");
-        if (players.GetArrayLength() != 4) throw new InvalidDataException("预期结果需要四个玩家，按编号排列。");
+        if (players.GetArrayLength() != 4) throw new InvalidDataException("预期必须声明四人。");
         for (int i = 0; i < 4; i++)
         {
-            var player = players[i];
-            if (player.GetProperty("playerId").GetInt32() != i + 1) throw new InvalidDataException("预期玩家必须按编号排列。");
-            ReadPosition(player.GetProperty("position"));
-            var death = player.GetProperty("deathTick");
-            if (death.ValueKind != JsonValueKind.Null && (death.GetInt32() < 1 || death.GetInt32() > TotalTicks))
-                throw new InvalidDataException("预期死亡时刻越界。");
-            if (player.GetProperty("ownedBubblesAtDeath").GetInt32() < 0) throw new InvalidDataException("死亡时泡泡数非法。");
+            var row = players[i]; ReadPosition(row.GetProperty("position"));
+            if (row.GetProperty("playerId").GetInt32() != i + 1) throw new InvalidDataException("预期玩家按编号排列。");
+            if (row.GetProperty("deathTick").ValueKind != JsonValueKind.Null)
+            {
+                var time = RationalTime.Read(row.GetProperty("deathTick"));
+                if (time < 0 || time > TotalTicks) throw new InvalidDataException("预期死亡时刻非法。");
+            }
         }
         int id = 0;
         foreach (var bubble in expected.GetProperty("bubbles").EnumerateArray())
         {
-            if (bubble.GetProperty("id").GetInt32() != ++id || id > TotalTicks * 4) throw new InvalidDataException("预期泡泡编号非法。");
-            int owner = bubble.GetProperty("ownerId").GetInt32();
-            if (owner is < 1 or > 4) throw new InvalidDataException("预期泡泡归属非法。");
+            if (bubble.GetProperty("id").GetInt32() != ++id || bubble.GetProperty("ownerId").GetInt32() is < 1 or > 4) throw new InvalidDataException("预期泡泡编号或归属非法。");
             ReadPosition(bubble.GetProperty("position"));
-            int placed = bubble.GetProperty("placedAt").GetInt32();
-            int? exploded = bubble.GetProperty("explodedAt").ValueKind == JsonValueKind.Null ? null : bubble.GetProperty("explodedAt").GetInt32();
-            if (placed < 0 || placed > TotalTicks || exploded < placed || exploded > TotalTicks) throw new InvalidDataException("预期泡泡时间非法。");
-            if (bubble.TryGetProperty("dueAt", out var due) && due.GetInt32() != placed + 3) throw new InvalidDataException("预定到期必须等于实际放置时刻加 3。");
-            if (bubble.TryGetProperty("sourceBubbleId", out var source) && source.ValueKind != JsonValueKind.Null &&
-                (source.GetInt32() < 1 || source.GetInt32() > expected.GetProperty("bubbles").GetArrayLength() || source.GetInt32() == id || exploded is null))
-                throw new InvalidDataException("预期连锁来源非法。");
+            var placed = RationalTime.Read(bubble.GetProperty("placedAt"));
+            bool initial = bubble.TryGetProperty("initial", out var init) && init.GetBoolean();
+            if ((!initial && placed < 0) || placed > TotalTicks) throw new InvalidDataException("预期放置时刻非法。");
+            if (bubble.GetProperty("explodedAt").ValueKind != JsonValueKind.Null)
+            {
+                var at = RationalTime.Read(bubble.GetProperty("explodedAt"));
+                if (at < 0 || at < placed || at > TotalTicks) throw new InvalidDataException("预期引爆时刻非法。");
+            }
+            if (bubble.TryGetProperty("dueAt", out var due) && RationalTime.Read(due) < placed) throw new InvalidDataException("预期到期早于放置。");
         }
         if (expected.TryGetProperty("end", out var end))
         {
-            int tick = end.GetProperty("tick").GetInt32();
-            var winner = end.GetProperty("winnerId");
-            if (tick < 1 || tick > TotalTicks || (winner.ValueKind != JsonValueKind.Null && winner.GetInt32() is < 1 or > 4))
-                throw new InvalidDataException("预期结束时刻或胜者非法。");
-            int survivors = 0, survivorId = 0;
-            foreach (var player in players.EnumerateArray())
-            {
-                var death = player.GetProperty("deathTick");
-                if (death.ValueKind == JsonValueKind.Null) { survivors++; survivorId = player.GetProperty("playerId").GetInt32(); }
-                else if (death.GetInt32() > tick) throw new InvalidDataException("预期死亡不能晚于结束。");
-            }
-            if ((winner.ValueKind == JsonValueKind.Null && survivors != 0) ||
-                (winner.ValueKind != JsonValueKind.Null && (survivors != 1 || survivorId != winner.GetInt32())))
-                throw new InvalidDataException("预期胜者与存活玩家不一致。");
-            foreach (var bubble in expected.GetProperty("bubbles").EnumerateArray())
-                if (bubble.GetProperty("placedAt").GetInt32() > tick ||
-                    (bubble.GetProperty("explodedAt").ValueKind != JsonValueKind.Null && bubble.GetProperty("explodedAt").GetInt32() > tick))
-                    throw new InvalidDataException("预期泡泡事件不能晚于结束。");
+            var at = RationalTime.Read(end.GetProperty("tick"));
+            if (at < 0 || at > TotalTicks || (end.GetProperty("winnerId").ValueKind != JsonValueKind.Null && end.GetProperty("winnerId").GetInt32() is < 1 or > 4)) throw new InvalidDataException("预期终局非法。");
         }
         foreach (var point in expected.GetProperty("destroyedCrates").EnumerateArray()) ReadPosition(point);
-        if (expected.GetProperty("deadPlacementSkips").GetInt32() < 0 || expected.GetProperty("ignoredDeadActions").GetInt32() < 0)
-            throw new InvalidDataException("预期取消次数不能为负。");
+        if (expected.GetProperty("deadPlacementSkips").GetInt32() < 0 || expected.GetProperty("ignoredDeadActions").GetInt32() < 0) throw new InvalidDataException("预期计数不能为负。");
     }
 
     internal static Position ReadPosition(JsonElement json)
@@ -146,7 +138,9 @@ public sealed class ScenarioScript : IDisposable
     public void Dispose()
     {
         var buffer = Interlocked.Exchange(ref _actions, null);
-        if (buffer is not null) ArrayPool<PlayerAction>.Shared.Return(buffer);
+        if (buffer is not null) ArrayPool<PlayerAction>.Shared.Return(buffer, true);
+        var placements = Interlocked.Exchange(ref _placements, null);
+        if (placements is not null) ArrayPool<Position>.Shared.Return(placements);
         Interlocked.Exchange(ref _document, null)?.Dispose();
     }
 }

@@ -12,8 +12,7 @@ namespace QQT.Server;
 public sealed class ScenarioRunner : IAsyncDisposable
 {
     private readonly GameSimulation _world = new();
-    private readonly SimulationEvent[] _history;
-    private readonly int _historyCapacity;
+    private SimulationEvent[] _history;
     private readonly ConcurrentDictionary<int, UiPeer> _peers = new();
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly ScenarioOptions _options;
@@ -30,10 +29,9 @@ public sealed class ScenarioRunner : IAsyncDisposable
     public ScenarioRunner(ScenarioOptions options, SimulationLogger log, ObjectPool<JsonMessageBuffer> messages, IHostApplicationLifetime lifetime)
     {
         _options = options; _log = log; _messages = messages; _stopping = lifetime.ApplicationStopping;
-        // 每轮事件上界由核心统一定义；按允许轮数预留，避免长脚本被短场景容量截断。
+        // 事件量取决于速度与连锁，按实际需要扩容；初始容量不作为事件上限。
         // 本 runner 唯一持有历史数组，跨重跑复用，仅在任务和发送完成后的 DisposeAsync 归还。
-        _historyCapacity = checked(options.MaxScriptTicks * GameSimulation.MaxEventsPerTick);
-        _history = ArrayPool<SimulationEvent>.Shared.Rent(_historyCapacity);
+        _history = ArrayPool<SimulationEvent>.Shared.Rent(GameSimulation.InitialEventCapacity);
     }
 
     public async Task<bool> StartAsync(bool paced = true)
@@ -81,7 +79,7 @@ public sealed class ScenarioRunner : IAsyncDisposable
         {
             using var script = ScenarioScript.Load(_options.ScriptPath, _options.MaxScriptTicks);
             await _gate.WaitAsync(_stopping);
-            try { _totalTicks = script.TotalTicks; _scenarioName = script.Name; }
+            try { _totalTicks = script.TotalTicks; _scenarioName = script.Name; if (script.Initial is { } initial) _world.Configure(initial); StoreAndLogEvents(); }
             finally { _gate.Release(); }
             _log.Started(_runId, script.Name);
             await PublishAsync(false);
@@ -133,7 +131,11 @@ public sealed class ScenarioRunner : IAsyncDisposable
     {
         foreach (var item in _world.Events)
         {
-            if (_historyCount >= _historyCapacity) throw new InvalidOperationException("脚本事件历史超出按允许轮数预留的容量。");
+            if (_historyCount == _history.Length)
+            {
+                var next = ArrayPool<SimulationEvent>.Shared.Rent(checked(_history.Length * 2));
+                _history.AsSpan(0, _historyCount).CopyTo(next); ArrayPool<SimulationEvent>.Shared.Return(_history); _history = next;
+            }
             _history[_historyCount++] = item;
             _log.Write(_runId, item);
         }
@@ -163,10 +165,10 @@ public sealed class ScenarioRunner : IAsyncDisposable
         w.WriteStartObject();
         w.WriteString("type", "frame"); w.WriteString("runId", _runId); w.WriteString("status", _status);
         w.WriteString("error", _error); w.WriteString("name", _scenarioName); w.WriteNumber("totalTicks", _totalTicks); w.WriteNumber("tick", _world.Tick); w.WriteNumber("size", GameSimulation.Size);
-        w.WriteNumber("durationMs", _options.AnimationMilliseconds); w.WriteBoolean("animate", animate);
+        WriteTime(w, "time", _world.Time); w.WriteNumber("durationMs", _options.AnimationMilliseconds); w.WriteBoolean("animate", animate);
         w.WriteBoolean("ended", _world.Ended);
         if (_world.WinnerId is { } winner) w.WriteNumber("winnerId", winner); else w.WriteNull("winnerId");
-        if (_world.EndTick is { } endedAt) w.WriteNumber("endTick", endedAt); else w.WriteNull("endTick");
+        if (_world.EndTick is { } endedAt) WriteTime(w, "endTick", endedAt); else w.WriteNull("endTick");
         w.WriteNumber("crateCount", _world.CrateCount); w.WriteNumber("bubbleCount", _world.BubbleCount);
         w.WriteStartArray("terrain");
         foreach (var cell in _world.Terrain) w.WriteNumberValue((int)cell);
@@ -175,25 +177,25 @@ public sealed class ScenarioRunner : IAsyncDisposable
         foreach (var p in _world.Players)
         {
             w.WriteStartObject(); w.WriteNumber("id", p.Id); WritePosition(w, "position", p.Position); w.WriteBoolean("hit", p.Hit); w.WriteBoolean("alive", p.Alive);
-            if (p.DeathTick is { } diedAt) w.WriteNumber("deathTick", diedAt); else w.WriteNull("deathTick");
-            w.WriteEndObject();
+            if (p.DeathTick is { } diedAt) WriteTime(w, "deathTick", diedAt); else w.WriteNull("deathTick");
+            WritePoint(w, "point", p.Point); w.WriteNumber("speed", p.Speed); w.WriteNumber("capacity", p.Capacity); w.WriteNumber("range", p.Range); WriteTime(w, "lifetime", p.Lifetime); w.WriteEndObject();
         }
         w.WriteEndArray(); w.WriteStartArray("bubbles");
         foreach (var b in _world.Bubbles)
         {
             w.WriteStartObject(); w.WriteNumber("id", b.Id); w.WriteNumber("ownerId", b.OwnerId); WritePosition(w, "position", b.Position);
-            w.WriteNumber("placedAt", b.PlacedAt); w.WriteNumber("dueAt", b.DueAt); w.WriteNumber("range", GameSimulation.ExplosionRange); w.WriteEndObject();
+            WriteTime(w, "placedAt", b.PlacedAt); WriteTime(w, "dueAt", b.DueAt); w.WriteNumber("range", _world.Players[b.OwnerId - 1].Range); w.WriteEndObject();
         }
         w.WriteEndArray(); w.WriteStartArray("moves");
         if (animate) foreach (var m in _world.Moves)
         {
-            w.WriteStartObject(); w.WriteNumber("playerId", m.PlayerId); WritePosition(w, "from", m.From); WritePosition(w, "to", m.To); w.WriteEndObject();
+            w.WriteStartObject(); w.WriteNumber("playerId", m.PlayerId); WritePoint(w, "from", m.From); WritePoint(w, "to", m.To); WriteTime(w, "start", m.Start); WriteTime(w, "end", m.End); w.WriteEndObject();
         }
         w.WriteEndArray(); w.WriteStartArray("events");
         for (int i = 0; i < _historyCount; i++)
         {
             var e = _history[i]; w.WriteStartObject(); w.WriteNumber("sequence", i + 1); w.WriteString("kind", EventName(e.Kind));
-            w.WriteNumber("tick", e.Tick); w.WriteNumber("playerId", e.PlayerId); w.WriteNumber("bubbleId", e.BubbleId);
+            WriteTime(w, "tick", e.Tick); w.WriteNumber("roundId", e.RoundId); WritePoint(w, "point", e.Point); WriteTime(w, "relatedTime", e.RelatedTime); w.WriteNumber("playerId", e.PlayerId); w.WriteNumber("bubbleId", e.BubbleId);
             WritePosition(w, "position", e.Position); WritePosition(w, "from", e.From); w.WriteBoolean("success", e.Success);
             w.WriteNumber("value", e.Value); w.WriteString("reason", e.Reason switch { SkipReason.Dead => "dead", SkipReason.NotReached => "notReached", SkipReason.Capacity => "capacity", _ => "none" }); w.WriteEndObject();
         }
@@ -207,13 +209,18 @@ public sealed class ScenarioRunner : IAsyncDisposable
         }
         w.WriteEndObject(); w.Flush();
     }
+    private static void WriteTime(Utf8JsonWriter w, string name, RationalTime time) { w.WritePropertyName(name); time.Write(w); }
+    private static void WritePoint(Utf8JsonWriter w, string name, ExactPosition point)
+    {
+        w.WriteStartObject(name); WriteTime(w, "x", point.X); WriteTime(w, "y", point.Y); w.WriteEndObject();
+    }
     private static void WritePosition(Utf8JsonWriter w, string name, Position p)
     {
         w.WriteStartObject(name); w.WriteNumber("x", p.X); w.WriteNumber("y", p.Y); w.WriteEndObject();
     }
     private static string EventName(EventKind kind) => kind switch
     {
-        EventKind.Move => "move", EventKind.Blocked => "blocked", EventKind.Placed => "placed",
+        EventKind.State => "state", EventKind.InitialBubble => "initialBubble", EventKind.Entered => "entered", EventKind.ReturnStarted => "returnStarted", EventKind.Returned => "returned", EventKind.Move => "move", EventKind.Blocked => "blocked", EventKind.Placed => "placed",
         EventKind.Exploded => "exploded", EventKind.Covered => "covered", EventKind.CrateDestroyed => "crateDestroyed",
         EventKind.Chained => "chained", EventKind.MatchEnded => "matchEnded",
         EventKind.Safety => "safety", EventKind.Death => "death", EventKind.ActionIgnored => "actionIgnored", _ => "placementSkipped"

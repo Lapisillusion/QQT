@@ -3,23 +3,34 @@ using System.Text.Json;
 
 namespace QQT.Core;
 
-/// <summary>受限 M0：一格/tick、整数到期，支持连锁与同批淘汰后即时胜负。输出事件由宿主记录和展示。</summary>
+/// <summary>四人精确事件模拟：跨线检查、中心放置、原速回退、瞬时爆炸与即时胜负。输出事件由宿主记录和展示。</summary>
 public sealed class GameSimulation : IDisposable
 {
     public const int Size = 21;
     public const int CellCount = Size * Size;
-    public const int MaxEventsPerTick = 96;
+    public const int InitialEventCapacity = 96;
     private readonly Cell[] _terrain = ArrayPool<Cell>.Shared.Rent(CellCount);
     private readonly Player[] _players = ArrayPool<Player>.Shared.Rent(4);
-    private readonly Bubble[] _bubbles = ArrayPool<Bubble>.Shared.Rent(12);
-    private readonly Move[] _moves = ArrayPool<Move>.Shared.Rent(4);
-    private readonly SimulationEvent[] _events = ArrayPool<SimulationEvent>.Shared.Rent(MaxEventsPerTick);
+    private Bubble[] _bubbles = ArrayPool<Bubble>.Shared.Rent(12);
+    private Move[] _moves = ArrayPool<Move>.Shared.Rent(4);
+    private SimulationEvent[] _events = ArrayPool<SimulationEvent>.Shared.Rent(InitialEventCapacity);
     private int _eventCount, _moveCount, _bubbleCount, _nextBubbleId, _placed, _exploded, _destroyed;
     private bool _disposed;
+    private readonly Cell[] _initialTerrain = ArrayPool<Cell>.Shared.Rent(CellCount);
+    private readonly MovementSegment[] _segments = ArrayPool<MovementSegment>.Shared.Rent(4);
+    private readonly bool[] _attempted = ArrayPool<bool>.Shared.Rent(4 * Size);
+    private int _initialCrates, _initialWalls;
+    public RationalTime Time { get; private set; }
+    private struct MovementSegment
+    {
+        public Position Origin, Target;
+        public RationalTime Start;
+        public bool Active, Crossed, Returning;
+    }
     public const int ExplosionRange = 1;
     public bool Ended { get; private set; }
     public int? WinnerId { get; private set; }
-    public int? EndTick { get; private set; }
+    public RationalTime? EndTick { get; private set; }
     public int Tick { get; private set; }
     public int CrateCount { get; private set; }
     public int BubbleCount => _bubbleCount;
@@ -52,6 +63,7 @@ public sealed class GameSimulation : IDisposable
     public void Reset()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        Time = 0;
         Tick = _eventCount = _moveCount = _bubbleCount = _nextBubbleId = _placed = _exploded = _destroyed = 0;
         Ended = false; WinnerId = null; EndTick = null;
         CrateCount = 0;
@@ -62,69 +74,214 @@ public sealed class GameSimulation : IDisposable
                 _terrain[p.Index] = InitialCell(p);
                 if (_terrain[p.Index] == Cell.Crate) CrateCount++;
             }
-        for (int i = 0; i < 4; i++) _players[i] = new Player { Id = i + 1, Position = Spawn(i) };
+        for (int i = 0; i < 4; i++) _players[i] = new Player { Id = i + 1, Position = Spawn(i), Point = ExactPosition.Center(Spawn(i)), Speed = 1, Capacity = 3, Range = 1, Lifetime = 3 };
+        SaveInitialTerrain();
+    }
+
+    /// <summary>测试环境只改变初始条件，后续使用与正式地图完全相同的模拟路径。</summary>
+    public void Configure(JsonElement initial)
+    {
+        if (Tick != 0 || Time != 0) throw new InvalidOperationException("只能初始化尚未推进的世界。");
+        if (initial.GetProperty("map").GetString() != "empty") throw new InvalidDataException("测试地图必须是 empty。");
+        _terrain.AsSpan(0, CellCount).Clear();
+        if (initial.TryGetProperty("walls", out var walls))
+            foreach (var cell in walls.EnumerateArray()) _terrain[ScenarioScript.ReadPosition(cell).Index] = Cell.Wall;
+        if (initial.TryGetProperty("crates", out var crates))
+            foreach (var cell in crates.EnumerateArray())
+            {
+                var point = ScenarioScript.ReadPosition(cell);
+                if (_terrain[point.Index] != Cell.Empty) throw new InvalidDataException("初始障碍不能重叠。");
+                _terrain[point.Index] = Cell.Crate;
+            }
+        var players = initial.GetProperty("players");
+        if (players.GetArrayLength() != 4) throw new InvalidDataException("初始环境必须配置四人。");
+        int seen = 0;
+        foreach (var row in players.EnumerateArray())
+        {
+            int id = row.GetProperty("playerId").GetInt32();
+            if (id is < 1 or > 4 || (seen & (1 << id)) != 0) throw new InvalidDataException("初始玩家编号非法或重复。");
+            seen |= 1 << id;
+            ref var player = ref _players[id - 1];
+            player.Position = ScenarioScript.ReadPosition(row.GetProperty("position"));
+            if (_terrain[player.Position.Index] != Cell.Empty) throw new InvalidDataException("出生点不可位于障碍。");
+            player.Point = ExactPosition.Center(player.Position);
+            player.Speed = Positive(row, "speed", 1); player.Capacity = Positive(row, "capacity", 3); player.Range = Positive(row, "range", 1);
+            player.Lifetime = row.TryGetProperty("lifetime", out var life) ? RationalTime.Read(life) : 3;
+            if (player.Lifetime <= 0) throw new InvalidDataException("泡泡寿命必须为正。");
+        }
+        SaveInitialTerrain();
+        if (initial.TryGetProperty("bubbles", out var bubbles))
+            foreach (var row in bubbles.EnumerateArray())
+            {
+                int owner = row.GetProperty("ownerId").GetInt32();
+                if (owner is < 1 or > 4) throw new InvalidDataException("初始泡泡归属非法。");
+                var position = ScenarioScript.ReadPosition(row.GetProperty("position"));
+                var placed = RationalTime.Read(row.GetProperty("placedAt"));
+                var due = RationalTime.Read(row.GetProperty("dueAt"));
+                if (_terrain[position.Index] != Cell.Empty || placed > 0 || due < 0 || due != placed + _players[owner - 1].Lifetime || Owned(owner) >= _players[owner - 1].Capacity)
+                    throw new InvalidDataException("初始泡泡位置、容量或寿命关系非法。");
+                Grow(ref _bubbles, _bubbleCount, _bubbleCount + 1);
+                var bubble = new Bubble(++_nextBubbleId, owner, position, placed, due);
+                _bubbles[_bubbleCount++] = bubble; _placed++;
+                Add(new(EventKind.InitialBubble, 0, owner, bubble.Id, position, position, true) { RelatedTime = due });
+            }
+    }
+    private static int Positive(JsonElement row, string name, int fallback)
+    {
+        int value = row.TryGetProperty(name, out var json) ? json.GetInt32() : fallback;
+        return value > 0 ? value : throw new InvalidDataException($"{name} 必须为正整数。");
+    }
+    private void SaveInitialTerrain()
+    {
+        _terrain.AsSpan(0, CellCount).CopyTo(_initialTerrain);
+        _initialCrates = _initialWalls = 0;
+        foreach (var cell in Terrain) { if (cell == Cell.Crate) _initialCrates++; if (cell == Cell.Wall) _initialWalls++; }
+        CrateCount = _initialCrates;
+    }
+    private int Owned(int playerId)
+    {
+        int count = 0; foreach (var b in Bubbles) if (b.OwnerId == playerId) count++;
+        return count;
     }
 
     public void Advance(ReadOnlySpan<PlayerAction> plans)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         if (Ended) throw new InvalidOperationException("已结束的对局不能继续推进。");
-        if (plans.Length != 4) throw new InvalidOperationException("需要四人完整计划；已死亡玩家的动作只记录并忽略。");
-        // 先完整校验，防止一半计划已生效才发现后续输入错误。
+        if (plans.Length != 4) throw new InvalidOperationException("需要四人完整计划。");
         for (int i = 0; i < 4; i++)
         {
             var plan = plans[i];
-            var start = _players[i].Position;
-            if (plan.PlayerId != i + 1 || !Enum.IsDefined(plan.Direction)) throw new InvalidDataException("计划玩家或方向不合法。");
+            if (plan.PlayerId != i + 1 || !Enum.IsDefined(plan.Direction) || plan.PlacementCount > Size) throw new InvalidDataException("计划玩家、方向或放置数量非法。");
             if (!_players[i].Alive) continue;
-            if (plan.Placement is { } p && p != start && p != start.Next(plan.Direction))
-                throw new InvalidDataException("放置点不属于本轮路径。");
+            for (int k = 0; k < plan.PlacementCount; k++)
+            {
+                var point = plan.PlacementAt(k);
+                var start = _players[i].Position;
+                int dx = point.X - start.X, dy = point.Y - start.Y;
+                long distance = Math.Abs((long)dx) + Math.Abs((long)dy);
+                bool onPath = point.InBounds && distance <= _players[i].Speed && (distance == 0 || plan.Direction switch
+                {
+                    Direction.Up => dx == 0 && dy < 0, Direction.Down => dx == 0 && dy > 0,
+                    Direction.Left => dy == 0 && dx < 0, Direction.Right => dy == 0 && dx > 0, _ => false
+                });
+                if (!onPath) throw new InvalidDataException("放置点不属于本轮路径。");
+                for (int j = 0; j < k; j++) if (plan.PlacementAt(j) == point) throw new InvalidDataException("同轮放置点重复。");
+            }
         }
         _eventCount = _moveCount = 0;
-        for (int i = 0; i < 4; i++)
-            if (!_players[i].Alive)
-                Add(new(EventKind.ActionIgnored, Tick, i + 1, 0, _players[i].Position, _players[i].Position, false, Tick + 1, SkipReason.Dead));
-        int originPlacements = 0;
-        for (int i = 0; i < 4; i++)
-            if (!_players[i].Hit && plans[i].Placement == _players[i].Position)
-            {
-                originPlacements |= 1 << i;
-                Place(i, _players[i].Position, Tick);
-            }
-
-        for (int i = 0; i < 4; i++)
+        _attempted.AsSpan(0, 4 * Size).Clear(); _segments.AsSpan(0, 4).Clear();
+        var end = (RationalTime)(++Tick);
+        for (int i = 0; i < 4; i++) if (!_players[i].Alive)
         {
-            ref var player = ref _players[i];
-            if (player.Hit) continue;
-            var from = player.Position;
-            var to = from.Next(plans[i].Direction);
-            if (to == from) continue;
-            // 只检查目标格；站在自己的泡泡格不妨碍向空格离开。
-            if (!to.InBounds || _terrain[to.Index] != Cell.Empty || HasBubble(to))
-                Add(new(EventKind.Blocked, Tick, player.Id, 0, to, from, false));
-            else
-            {
-                player.Position = to;
-                _moves[_moveCount++] = new(player.Id, from, to);
-                Add(new(EventKind.Move, Tick + 1, player.Id, 0, to, from, true));
-            }
+            Add(new(EventKind.ActionIgnored, Time, i + 1, 0, _players[i].Position, _players[i].Position, false, Tick, SkipReason.Dead));
+            _attempted.AsSpan(i * Size, Size).Fill(true); // 死亡后新一轮只忽略计划，不再次记录放置取消。
         }
-        Tick++;
+        // 起点也按同刻顺序处理；到期先于起点放置，所有位置裁决不依赖玩家遍历顺序。
         ExplodeDue();
-        // 胜负在整批爆炸与淘汰后判定；结束时连存活者的终点放置也不再执行。
-        if (Ended) return;
-        // 终点旧泡泡先引爆和受击，存活者才执行终点放置。
+        if (ResolveOutcome()) return;
+        SkipRemaining(plans, true);
+        AttemptCenters(plans, true);
+        for (int i = 0; i < 4; i++) StartSegment(i, plans[i].Direction, end);
+        RecordStates();
+        while (Time < end)
+        {
+            var next = end;
+            for (int b = 0; b < _bubbleCount; b++) if (_bubbles[b].DueAt > Time && _bubbles[b].DueAt < next) next = _bubbles[b].DueAt;
+            for (int i = 0; i < 4; i++) if (_players[i].Alive && _segments[i].Active)
+            {
+                ref var segment = ref _segments[i];
+                var at = segment.Start + new RationalTime(1, segment.Crossed || segment.Returning ? _players[i].Speed : checked(2L * _players[i].Speed));
+                if (at < next) next = at;
+            }
+            AdvancePoints(next); Time = next;
+            // 本批跨线全部使用清理前环境；同刻新放置不能追溯阻挡已成功进入者。
+            for (int i = 0; i < 4; i++)
+            {
+                ref var player = ref _players[i]; ref var segment = ref _segments[i];
+                if (!player.Alive || !segment.Active) continue;
+                var half = segment.Start + new RationalTime(1, checked(2L * player.Speed));
+                var center = segment.Start + new RationalTime(1, player.Speed);
+                if (!segment.Crossed && !segment.Returning && Time == half)
+                {
+                    if (!segment.Target.InBounds || _terrain[segment.Target.Index] != Cell.Empty || HasBubble(segment.Target))
+                    {
+                        segment.Returning = true;
+                        Add(new(EventKind.Blocked, Time, player.Id, 0, segment.Target, segment.Origin, false));
+                        Add(new(EventKind.ReturnStarted, Time, player.Id, 0, segment.Origin, segment.Origin, true));
+                    }
+                    else
+                    {
+                        segment.Crossed = true; player.Position = segment.Target;
+                        Add(new(EventKind.Entered, Time, player.Id, 0, player.Position, segment.Origin, true));
+                    }
+                }
+                if (Time == center)
+                {
+                    segment.Active = false;
+                    Add(new(segment.Returning ? EventKind.Returned : EventKind.Move, Time, player.Id, 0, player.Position, segment.Origin, true));
+                }
+            }
+            ExplodeDue();
+            if (ResolveOutcome()) return;
+            SkipRemaining(plans, true);
+            AttemptCenters(plans, false);
+            if (Time == end) SkipRemaining(plans);
+            for (int i = 0; i < 4; i++) if (!_segments[i].Active && !_segments[i].Returning) StartSegment(i, plans[i].Direction, end);
+            RecordStates();
+        }
+    }
+    private void StartSegment(int i, Direction direction, RationalTime end)
+    {
+        if (!_players[i].Alive || direction == Direction.Wait || Time >= end) return;
+        _segments[i] = new MovementSegment { Origin = _players[i].Position, Target = _players[i].Position.Next(direction), Start = Time, Active = true };
+    }
+    private void AdvancePoints(RationalTime next)
+    {
         for (int i = 0; i < 4; i++)
         {
-            var plan = plans[i];
-            // 已尝试的起点放置不在终点重复执行（包括容量不足的请求）。
-            if (!_players[i].Alive && _players[i].DeathTick != Tick) continue;
-            if (plan.Placement is not { } target || (originPlacements & (1 << i)) != 0) continue;
-            if (_players[i].Hit || _players[i].Position != target)
-                Add(new(EventKind.PlacementSkipped, Tick, i + 1, 0, target, target, false, Reason: _players[i].Alive ? SkipReason.NotReached : SkipReason.Dead));
-            else Place(i, target, Tick);
+            ref var p = ref _players[i]; ref var segment = ref _segments[i];
+            if (!p.Alive || !segment.Active) continue;
+            var distance = (next - segment.Start) * p.Speed;
+            if (segment.Returning) distance = 1 - distance;
+            var point = new ExactPosition((RationalTime)segment.Origin.X + distance * (segment.Target.X - segment.Origin.X), (RationalTime)segment.Origin.Y + distance * (segment.Target.Y - segment.Origin.Y));
+            Grow(ref _moves, _moveCount, _moveCount + 1);
+            _moves[_moveCount++] = new(p.Id, p.Point, point, Time, next); p.Point = point;
         }
-
+    }
+    private void AttemptCenters(ReadOnlySpan<PlayerAction> plans, bool origin)
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            if (!_players[i].Alive || (!origin && (_segments[i].Active || _segments[i].Returning))) continue;
+            for (int k = 0; k < plans[i].PlacementCount; k++)
+                if (!_attempted[i * Size + k] && plans[i].PlacementAt(k) == _players[i].Position)
+                {
+                    _attempted[i * Size + k] = true; Place(i, _players[i].Position, Time);
+                }
+        }
+    }
+    private void SkipRemaining(ReadOnlySpan<PlayerAction> plans, bool deadOnly = false)
+    {
+        for (int i = 0; i < 4; i++) for (int k = 0; k < plans[i].PlacementCount; k++)
+            if (!_attempted[i * Size + k] && (!deadOnly || !_players[i].Alive))
+            {
+                _attempted[i * Size + k] = true;
+                Add(new(EventKind.PlacementSkipped, Time, i + 1, 0, plans[i].PlacementAt(k), _players[i].Position, false, Reason: _players[i].Alive ? SkipReason.NotReached : SkipReason.Dead));
+            }
+    }
+    private void RecordStates()
+    {
+        foreach (var p in Players) Add(new(EventKind.State, Time, p.Id, 0, p.Position, p.Position, p.Alive, Owned(p.Id)));
+    }
+    private bool ResolveOutcome()
+    {
+        int survivors = 0, winner = 0;
+        foreach (var p in Players) if (p.Alive) { survivors++; winner = p.Id; }
+        if (survivors > 1) return false;
+        RecordStates(); Ended = true; EndTick = Time; WinnerId = survivors == 1 ? winner : null;
+        Add(new(EventKind.MatchEnded, Time, WinnerId ?? 0, 0, default, default, true, survivors));
+        return true;
     }
 
     private bool HasBubble(Position position)
@@ -133,25 +290,26 @@ public sealed class GameSimulation : IDisposable
         return false;
     }
 
-    private void Place(int playerIndex, Position position, int time)
+    private void Place(int playerIndex, Position position, RationalTime time)
     {
         int owned = 0;
         for (int b = 0; b < _bubbleCount; b++) if (_bubbles[b].OwnerId == playerIndex + 1) owned++;
-        if (owned >= 3)
+        if (owned >= _players[playerIndex].Capacity)
         {
             Add(new(EventKind.PlacementSkipped, time, playerIndex + 1, 0, position, position, false, Reason: SkipReason.Capacity));
             return;
         }
-        var bubble = new Bubble(++_nextBubbleId, playerIndex + 1, position, time, time + 3);
+        var bubble = new Bubble(++_nextBubbleId, playerIndex + 1, position, time, time + _players[playerIndex].Lifetime);
+        Grow(ref _bubbles, _bubbleCount, _bubbleCount + 1);
         _bubbles[_bubbleCount++] = bubble;
         _placed++;
-        Add(new(EventKind.Placed, time, playerIndex + 1, bubble.Id, position, position, true));
+        Add(new(EventKind.Placed, time, playerIndex + 1, bubble.Id, position, position, true) { RelatedTime = bubble.DueAt });
     }
 
     private void ExplodeDue()
     {
         bool any = false;
-        for (int b = 0; b < _bubbleCount; b++) any |= _bubbles[b].DueAt <= Tick;
+        for (int b = 0; b < _bubbleCount; b++) any |= _bubbles[b].DueAt <= Time;
         if (!any) return;
         // 本方法唯一持有临时缓冲；标记在入队时写入，重复覆盖不能重复引爆或释放容量。
         // 地形与泡泡数组保持不变直到队列完全消费，所有到期和递归连锁共享旧地图。
@@ -166,7 +324,7 @@ public sealed class GameSimulation : IDisposable
             scheduled.AsSpan(0, _bubbleCount).Clear();
             int pendingCount = 0;
             for (int b = 0; b < _bubbleCount; b++)
-                if (_bubbles[b].DueAt <= Tick)
+                if (_bubbles[b].DueAt <= Time)
                 {
                     scheduled[b] = true;
                     pending[pendingCount++] = b;
@@ -175,8 +333,8 @@ public sealed class GameSimulation : IDisposable
             {
                 var bubble = _bubbles[pending[head]];
                 _exploded++;
-                Add(new(EventKind.Exploded, Tick, bubble.OwnerId, bubble.Id, bubble.Position, bubble.Position, true, bubble.DueAt));
-                TraceBlast(bubble, ExplosionRange, covered, scheduled, pending, ref pendingCount);
+                Add(new(EventKind.Exploded, Time, bubble.OwnerId, bubble.Id, bubble.Position, bubble.Position, true) { RelatedTime = bubble.DueAt });
+                TraceBlast(bubble, _players[bubble.OwnerId - 1].Range, covered, scheduled, pending, ref pendingCount);
             }
             for (int i = 0; i < CellCount; i++)
                 if (covered[i] && _terrain[i] == Cell.Crate)
@@ -185,7 +343,7 @@ public sealed class GameSimulation : IDisposable
                     CrateCount--;
                     _destroyed++;
                     var p = new Position(i % Size, i / Size);
-                    Add(new(EventKind.CrateDestroyed, Tick, 0, 0, p, p, true));
+                    Add(new(EventKind.CrateDestroyed, Time, 0, 0, p, p, true));
                 }
             // 先清理本批已爆炸泡泡，再记录死亡时仍在场的自有泡泡。
             int retained = 0;
@@ -197,15 +355,15 @@ public sealed class GameSimulation : IDisposable
                 ref var player = ref _players[i];
                 if (!player.Alive) continue; // 后续爆炸不重复淘汰或产生第二个死亡事件。
                 bool safe = !covered[player.Position.Index];
-                Add(new(EventKind.Safety, Tick, player.Id, 0, player.Position, player.Position, safe));
+                Add(new(EventKind.Safety, Time, player.Id, 0, player.Position, player.Position, safe));
                 if (safe) continue;
                 player.Hit = true;
-                player.DeathTick = Tick;
+                player.DeathTick = Time;
                 int owned = 0;
                 for (int b = 0; b < _bubbleCount; b++) if (_bubbles[b].OwnerId == player.Id) owned++;
                 player.OwnedBubblesAtDeath = owned;
                 // 只取消动作，保留已放泡泡及归属，让它们继续按原到期时间爆炸。
-                Add(new(EventKind.Death, Tick, player.Id, 0, player.Position, player.Position, false, owned));
+                Add(new(EventKind.Death, Time, player.Id, 0, player.Position, player.Position, false, owned));
             }
         }
         finally
@@ -213,15 +371,6 @@ public sealed class GameSimulation : IDisposable
             if (pending is not null) ArrayPool<int>.Shared.Return(pending);
             if (scheduled is not null) ArrayPool<bool>.Shared.Return(scheduled);
             ArrayPool<bool>.Shared.Return(covered);
-        }
-        // 不在逐颗爆炸或逐人淘汰的中间判胜负，避免同刻的另一颗仍能淘汰所谓胜者。
-        int survivors = 0, winner = 0;
-        foreach (var player in Players)
-            if (player.Alive) { survivors++; winner = player.Id; }
-        if (survivors <= 1)
-        {
-            Ended = true; EndTick = Tick; WinnerId = survivors == 1 ? winner : null;
-            Add(new(EventKind.MatchEnded, Tick, WinnerId ?? 0, 0, default, default, true, survivors));
         }
     }
 
@@ -245,7 +394,7 @@ public sealed class GameSimulation : IDisposable
     private void Cover(Position position, Bubble bubble, bool[] covered, bool[] scheduled, int[] pending, ref int pendingCount)
     {
         covered[position.Index] = true;
-        Add(new(EventKind.Covered, Tick, bubble.OwnerId, bubble.Id, position, position, true));
+        Add(new(EventKind.Covered, Time, bubble.OwnerId, bubble.Id, position, position, true));
         // 也扫描爆心，以覆盖同格叠放；入队后继续原射线，只有墙和箱子能够截断。
         for (int b = 0; b < _bubbleCount; b++)
             if (!scheduled[b] && _bubbles[b].Position == position)
@@ -253,14 +402,23 @@ public sealed class GameSimulation : IDisposable
                 scheduled[b] = true;
                 pending[pendingCount++] = b;
                 var target = _bubbles[b];
-                Add(new(EventKind.Chained, Tick, target.OwnerId, target.Id, position, bubble.Position, true, bubble.Id));
+                Add(new(EventKind.Chained, Time, target.OwnerId, target.Id, position, bubble.Position, true, bubble.Id));
             }
     }
 
+    // 世界唯一持有这些池数组；扩容仅复制有效区，归还旧数组，快照序列化后不借用数组。
+    private static void Grow<T>(ref T[] array, int used, int required)
+    {
+        if (required <= array.Length) return;
+        var next = ArrayPool<T>.Shared.Rent(Math.Max(required, checked(array.Length * 2)));
+        array.AsSpan(0, used).CopyTo(next);
+        ArrayPool<T>.Shared.Return(array, System.Runtime.CompilerServices.RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+        array = next;
+    }
     private void Add(SimulationEvent item)
     {
-        if (_eventCount >= MaxEventsPerTick) throw new InvalidOperationException("M0 事件缓冲超出场景容量。");
-        _events[_eventCount++] = item;
+        Grow(ref _events, _eventCount, _eventCount + 1);
+        _events[_eventCount++] = item with { Point = item.PlayerId is >= 1 and <= 4 ? _players[item.PlayerId - 1].Point : default, RoundId = Tick };
     }
 
     /// <summary>按脚本独立声明的结果验收，死亡场景预期死亡也可以验证通过。</summary>
@@ -274,8 +432,9 @@ public sealed class GameSimulation : IDisposable
             var player = _players[i];
             if (player.Alive) safe++;
             var row = expectedPlayers[i];
+            if (row.TryGetProperty("point", out var finalPoint)) playersMatch &= player.Point.X == RationalTime.Read(finalPoint.GetProperty("x")) && player.Point.Y == RationalTime.Read(finalPoint.GetProperty("y"));
             var deathJson = row.GetProperty("deathTick");
-            int? death = deathJson.ValueKind == JsonValueKind.Null ? null : deathJson.GetInt32();
+            RationalTime? death = deathJson.ValueKind == JsonValueKind.Null ? null : RationalTime.Read(deathJson);
             if (death is not null) expectedDeaths++;
             int deathEvents = 0;
             foreach (var e in history)
@@ -304,7 +463,7 @@ public sealed class GameSimulation : IDisposable
         if (expected.TryGetProperty("end", out var end))
         {
             int? winner = end.GetProperty("winnerId").ValueKind == JsonValueKind.Null ? null : end.GetProperty("winnerId").GetInt32();
-            outcomeMatches = Ended && WinnerId == winner && EndTick == end.GetProperty("tick").GetInt32() && Tick == EndTick;
+            outcomeMatches = Ended && WinnerId == winner && EndTick == RationalTime.Read(end.GetProperty("tick")) && Time == EndTick;
         }
         int endings = 0;
         bool endSeen = false;
@@ -323,17 +482,18 @@ public sealed class GameSimulation : IDisposable
         {
             int id = row.GetProperty("id").GetInt32(), owner = row.GetProperty("ownerId").GetInt32();
             var position = ScenarioScript.ReadPosition(row.GetProperty("position"));
-            int placedAt = row.GetProperty("placedAt").GetInt32();
-            int dueAt = row.TryGetProperty("dueAt", out var due) ? due.GetInt32() : placedAt + 3;
-            int? explodedAt = row.GetProperty("explodedAt").ValueKind == JsonValueKind.Null ? null : row.GetProperty("explodedAt").GetInt32();
+            var placedAt = RationalTime.Read(row.GetProperty("placedAt"));
+            var dueAt = row.TryGetProperty("dueAt", out var due) ? RationalTime.Read(due) : placedAt + _players[owner - 1].Lifetime;
+            RationalTime? explodedAt = row.GetProperty("explodedAt").ValueKind == JsonValueKind.Null ? null : RationalTime.Read(row.GetProperty("explodedAt"));
             int placedMatches = 0, explodedMatches = 0, chains = 0;
+            bool initial = row.TryGetProperty("initial", out var init) && init.GetBoolean();
             foreach (var e in history)
             {
                 if (e.BubbleId != id) continue;
-                if (e.Kind is not (EventKind.Placed or EventKind.Exploded or EventKind.Chained)) continue;
+                if (e.Kind is not (EventKind.Placed or EventKind.InitialBubble or EventKind.Exploded or EventKind.Chained)) continue;
                 bubblesMatch &= e.PlayerId == owner && e.Position == position;
-                if (e.Kind == EventKind.Placed) { placedMatches++; bubblesMatch &= e.Tick == placedAt; }
-                if (e.Kind == EventKind.Exploded) { explodedMatches++; bubblesMatch &= e.Tick == explodedAt && e.Value == dueAt; }
+                if (e.Kind is EventKind.Placed or EventKind.InitialBubble) { placedMatches++; bubblesMatch &= initial ? e.Kind == EventKind.InitialBubble : e.Kind == EventKind.Placed && e.Tick == placedAt; }
+                if (e.Kind == EventKind.Exploded) { explodedMatches++; bubblesMatch &= e.Tick == explodedAt && e.RelatedTime == dueAt; }
                 if (e.Kind == EventKind.Chained)
                 {
                     chains++;
@@ -343,7 +503,7 @@ public sealed class GameSimulation : IDisposable
             }
             if (row.TryGetProperty("sourceBubbleId", out var expectedSource))
                 bubblesMatch &= chains == (expectedSource.ValueKind == JsonValueKind.Null ? 0 : 1);
-            bubblesMatch &= placedMatches == 1 && explodedMatches == (explodedAt is null ? 0 : 1) && dueAt == placedAt + 3;
+            bubblesMatch &= placedMatches == 1 && explodedMatches == (explodedAt is null ? 0 : 1) && dueAt == placedAt + _players[owner - 1].Lifetime;
             int retainedMatches = 0;
             foreach (var bubble in Bubbles)
                 if (bubble.Id == id)
@@ -365,14 +525,43 @@ public sealed class GameSimulation : IDisposable
                 destroyedMask[ScenarioScript.ReadPosition(json).Index] = true;
             for (int i = 0; i < CellCount; i++)
             {
-                var p = new Position(i % Size, i / Size);
-                var cell = destroyedMask[i] ? Cell.Empty : InitialCell(p);
+                var cell = destroyedMask[i] ? Cell.Empty : _initialTerrain[i];
                 mapMatches &= _terrain[i] == cell;
                 if (_terrain[i] == Cell.Wall) walls++;
             }
         }
         finally { ArrayPool<bool>.Shared.Return(destroyedMask); }
-        mapMatches &= CrateCount == 329 - expectedDestroyed && _destroyed == expectedDestroyed && walls == 100;
+        mapMatches &= CrateCount == _initialCrates - expectedDestroyed && _destroyed == expectedDestroyed && walls == _initialWalls;
+        if (expected.TryGetProperty("checkpoints", out var checkpoints))
+            foreach (var row in checkpoints.EnumerateArray())
+            {
+                var at = RationalTime.Read(row.GetProperty("time"));
+                foreach (var player in row.GetProperty("players").EnumerateArray())
+                {
+                    int id = player.GetProperty("playerId").GetInt32(); bool found = false;
+                    foreach (var e in history)
+                        if (e.Kind == EventKind.State && e.Tick == at && e.PlayerId == id && (!row.TryGetProperty("roundId", out var round) || e.RoundId == round.GetInt32()))
+                        {
+                            found = true;
+                            playersMatch &= e.Position == ScenarioScript.ReadPosition(player.GetProperty("position")) && e.Success == player.GetProperty("alive").GetBoolean();
+                            if (player.TryGetProperty("point", out var point)) playersMatch &= e.Point.X == RationalTime.Read(point.GetProperty("x")) && e.Point.Y == RationalTime.Read(point.GetProperty("y"));
+                        }
+                    playersMatch &= found;
+                }
+            }
+        if (expected.TryGetProperty("events", out var assertions))
+            foreach (var row in assertions.EnumerateArray())
+            {
+                int matches = 0;
+                var kind = Enum.Parse<EventKind>(row.GetProperty("kind").GetString()!, true);
+                foreach (var e in history)
+                    if (e.Kind == kind && (!row.TryGetProperty("time", out var at) || e.Tick == RationalTime.Read(at)) &&
+                        (!row.TryGetProperty("playerId", out var id) || e.PlayerId == id.GetInt32()) &&
+                        (!row.TryGetProperty("bubbleId", out var bubbleId) || e.BubbleId == bubbleId.GetInt32()) &&
+                        (!row.TryGetProperty("position", out var point) || e.Position == ScenarioScript.ReadPosition(point)) &&
+                        (!row.TryGetProperty("reason", out var reason) || e.Reason == Enum.Parse<SkipReason>(reason.GetString()!, true))) matches++;
+                actionsMatch &= matches == row.GetProperty("count").GetInt32();
+            }
         bool passed = playersMatch && mapMatches && bubblesMatch && actionsMatch && outcomeMatches;
         return new(passed, Tick, CrateCount, walls, _bubbleCount, safe, _placed, _exploded, _destroyed, mapMatches,
             4 - safe, deaths, playersMatch, bubblesMatch, actionsMatch, outcomeMatches);
@@ -382,6 +571,9 @@ public sealed class GameSimulation : IDisposable
         if (_disposed) return;
         _disposed = true;
         ArrayPool<Cell>.Shared.Return(_terrain);
+        ArrayPool<Cell>.Shared.Return(_initialTerrain);
+        ArrayPool<MovementSegment>.Shared.Return(_segments);
+        ArrayPool<bool>.Shared.Return(_attempted);
         ArrayPool<Player>.Shared.Return(_players);
         ArrayPool<Bubble>.Shared.Return(_bubbles);
         ArrayPool<Move>.Shared.Return(_moves);

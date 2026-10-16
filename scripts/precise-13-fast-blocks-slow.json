@@ -1,0 +1,259 @@
+{
+  "name": "速度十中心放置阻挡速度一玩家",
+  "notes": [
+    "独立初始环境与完整四人动作；预期在运行前按规则解析推导。",
+    "使用与正式场景相同的核心、日志与 UI；未声明 end 表示验收时对局仍进行。"
+  ],
+  "totalTicks": 1,
+  "initial": {
+    "map": "empty",
+    "players": [
+      {
+        "playerId": 1,
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "speed": 10,
+        "capacity": 3,
+        "range": 1,
+        "lifetime": 3
+      },
+      {
+        "playerId": 2,
+        "position": {
+          "x": 2,
+          "y": 0
+        },
+        "speed": 1,
+        "capacity": 3,
+        "range": 1,
+        "lifetime": 3
+      },
+      {
+        "playerId": 3,
+        "position": {
+          "x": 18,
+          "y": 20
+        },
+        "speed": 1,
+        "capacity": 3,
+        "range": 1,
+        "lifetime": 3
+      },
+      {
+        "playerId": 4,
+        "position": {
+          "x": 20,
+          "y": 18
+        },
+        "speed": 1,
+        "capacity": 3,
+        "range": 1,
+        "lifetime": 3
+      }
+    ],
+    "walls": [],
+    "crates": [],
+    "bubbles": []
+  },
+  "rounds": [
+    {
+      "roundId": 1,
+      "actions": [
+        {
+          "playerId": 1,
+          "direction": "right",
+          "placements": [
+            {
+              "x": 1,
+              "y": 0
+            }
+          ]
+        },
+        {
+          "playerId": 2,
+          "direction": "left",
+          "placements": [
+            {
+              "x": 1,
+              "y": 0
+            }
+          ]
+        },
+        {
+          "playerId": 3,
+          "direction": "wait",
+          "placements": []
+        },
+        {
+          "playerId": 4,
+          "direction": "wait",
+          "placements": []
+        }
+      ]
+    }
+  ],
+  "expected": {
+    "players": [
+      {
+        "playerId": 1,
+        "position": {
+          "x": 10,
+          "y": 0
+        },
+        "point": {
+          "x": 10,
+          "y": 0
+        },
+        "deathTick": null,
+        "ownedBubblesAtDeath": 0
+      },
+      {
+        "playerId": 2,
+        "position": {
+          "x": 2,
+          "y": 0
+        },
+        "point": {
+          "x": 2,
+          "y": 0
+        },
+        "deathTick": null,
+        "ownedBubblesAtDeath": 0
+      },
+      {
+        "playerId": 3,
+        "position": {
+          "x": 18,
+          "y": 20
+        },
+        "point": {
+          "x": 18,
+          "y": 20
+        },
+        "deathTick": null,
+        "ownedBubblesAtDeath": 0
+      },
+      {
+        "playerId": 4,
+        "position": {
+          "x": 20,
+          "y": 18
+        },
+        "point": {
+          "x": 20,
+          "y": 18
+        },
+        "deathTick": null,
+        "ownedBubblesAtDeath": 0
+      }
+    ],
+    "bubbles": [
+      {
+        "id": 1,
+        "ownerId": 1,
+        "position": {
+          "x": 1,
+          "y": 0
+        },
+        "placedAt": {
+          "numerator": 1,
+          "denominator": 10
+        },
+        "dueAt": {
+          "numerator": 31,
+          "denominator": 10
+        },
+        "explodedAt": null,
+        "sourceBubbleId": null
+      }
+    ],
+    "destroyedCrates": [],
+    "deadPlacementSkips": 0,
+    "ignoredDeadActions": 0,
+    "checkpoints": [
+      {
+        "time": {
+          "numerator": 1,
+          "denominator": 20
+        },
+        "roundId": 1,
+        "players": [
+          {
+            "playerId": 1,
+            "position": {
+              "x": 1,
+              "y": 0
+            },
+            "point": {
+              "x": {
+                "numerator": 1,
+                "denominator": 2
+              },
+              "y": 0
+            },
+            "alive": true
+          }
+        ]
+      },
+      {
+        "time": {
+          "numerator": 3,
+          "denominator": 4
+        },
+        "roundId": 1,
+        "players": [
+          {
+            "playerId": 2,
+            "position": {
+              "x": 2,
+              "y": 0
+            },
+            "point": {
+              "x": {
+                "numerator": 7,
+                "denominator": 4
+              },
+              "y": 0
+            },
+            "alive": true
+          }
+        ]
+      }
+    ],
+    "events": [
+      {
+        "kind": "placed",
+        "count": 0,
+        "time": {
+          "numerator": 1,
+          "denominator": 20
+        }
+      },
+      {
+        "kind": "placed",
+        "count": 1,
+        "time": {
+          "numerator": 1,
+          "denominator": 10
+        }
+      },
+      {
+        "kind": "returnStarted",
+        "count": 1,
+        "playerId": 2,
+        "time": {
+          "numerator": 1,
+          "denominator": 2
+        }
+      },
+      {
+        "kind": "returned",
+        "count": 1,
+        "playerId": 2,
+        "time": 1
+      }
+    ]
+  }
+}

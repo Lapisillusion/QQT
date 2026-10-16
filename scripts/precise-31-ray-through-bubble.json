@@ -1,0 +1,234 @@
+{
+  "name": "连锁不截断原射线，也不延长原射程",
+  "notes": [
+    "独立初始环境与完整四人动作；预期在运行前按规则解析推导。",
+    "使用与正式场景相同的核心、日志与 UI；未声明 end 表示验收时对局仍进行。"
+  ],
+  "totalTicks": 1,
+  "initial": {
+    "map": "empty",
+    "players": [
+      {
+        "playerId": 1,
+        "position": {
+          "x": 3,
+          "y": 0
+        },
+        "speed": 1,
+        "capacity": 3,
+        "range": 1,
+        "lifetime": 3
+      },
+      {
+        "playerId": 2,
+        "position": {
+          "x": 4,
+          "y": 0
+        },
+        "speed": 1,
+        "capacity": 3,
+        "range": 1,
+        "lifetime": 3
+      },
+      {
+        "playerId": 3,
+        "position": {
+          "x": 18,
+          "y": 20
+        },
+        "speed": 1,
+        "capacity": 3,
+        "range": 1,
+        "lifetime": 3
+      },
+      {
+        "playerId": 4,
+        "position": {
+          "x": 20,
+          "y": 18
+        },
+        "speed": 1,
+        "capacity": 3,
+        "range": 3,
+        "lifetime": 3
+      }
+    ],
+    "walls": [],
+    "crates": [],
+    "bubbles": [
+      {
+        "ownerId": 4,
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "dueAt": {
+          "numerator": 1,
+          "denominator": 3
+        },
+        "placedAt": {
+          "numerator": -8,
+          "denominator": 3
+        }
+      },
+      {
+        "ownerId": 3,
+        "position": {
+          "x": 1,
+          "y": 0
+        },
+        "dueAt": 1,
+        "placedAt": -2
+      }
+    ]
+  },
+  "rounds": [
+    {
+      "roundId": 1,
+      "actions": [
+        {
+          "playerId": 1,
+          "direction": "wait",
+          "placements": []
+        },
+        {
+          "playerId": 2,
+          "direction": "wait",
+          "placements": []
+        },
+        {
+          "playerId": 3,
+          "direction": "wait",
+          "placements": []
+        },
+        {
+          "playerId": 4,
+          "direction": "wait",
+          "placements": []
+        }
+      ]
+    }
+  ],
+  "expected": {
+    "players": [
+      {
+        "playerId": 1,
+        "position": {
+          "x": 3,
+          "y": 0
+        },
+        "point": {
+          "x": 3,
+          "y": 0
+        },
+        "deathTick": {
+          "numerator": 1,
+          "denominator": 3
+        },
+        "ownedBubblesAtDeath": 0
+      },
+      {
+        "playerId": 2,
+        "position": {
+          "x": 4,
+          "y": 0
+        },
+        "point": {
+          "x": 4,
+          "y": 0
+        },
+        "deathTick": null,
+        "ownedBubblesAtDeath": 0
+      },
+      {
+        "playerId": 3,
+        "position": {
+          "x": 18,
+          "y": 20
+        },
+        "point": {
+          "x": 18,
+          "y": 20
+        },
+        "deathTick": null,
+        "ownedBubblesAtDeath": 0
+      },
+      {
+        "playerId": 4,
+        "position": {
+          "x": 20,
+          "y": 18
+        },
+        "point": {
+          "x": 20,
+          "y": 18
+        },
+        "deathTick": null,
+        "ownedBubblesAtDeath": 0
+      }
+    ],
+    "bubbles": [
+      {
+        "ownerId": 4,
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "dueAt": {
+          "numerator": 1,
+          "denominator": 3
+        },
+        "placedAt": {
+          "numerator": -8,
+          "denominator": 3
+        },
+        "id": 1,
+        "initial": true,
+        "explodedAt": {
+          "numerator": 1,
+          "denominator": 3
+        },
+        "sourceBubbleId": null
+      },
+      {
+        "ownerId": 3,
+        "position": {
+          "x": 1,
+          "y": 0
+        },
+        "dueAt": 1,
+        "placedAt": -2,
+        "id": 2,
+        "initial": true,
+        "explodedAt": {
+          "numerator": 1,
+          "denominator": 3
+        },
+        "sourceBubbleId": 1
+      }
+    ],
+    "destroyedCrates": [],
+    "deadPlacementSkips": 0,
+    "ignoredDeadActions": 0,
+    "checkpoints": [],
+    "events": [
+      {
+        "kind": "covered",
+        "count": 1,
+        "bubbleId": 1,
+        "position": {
+          "x": 3,
+          "y": 0
+        }
+      },
+      {
+        "kind": "covered",
+        "count": 0,
+        "position": {
+          "x": 4,
+          "y": 0
+        }
+      }
+    ]
+  }
+}

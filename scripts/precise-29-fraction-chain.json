@@ -1,0 +1,270 @@
+{
+  "name": "原三格演示：4/3 时递归连锁，旧到期不重复爆炸",
+  "notes": [
+    "独立初始环境与完整四人动作；预期在运行前按规则解析推导。",
+    "使用与正式场景相同的核心、日志与 UI；未声明 end 表示验收时对局仍进行。"
+  ],
+  "totalTicks": 2,
+  "initial": {
+    "map": "empty",
+    "players": [
+      {
+        "playerId": 1,
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "speed": 3,
+        "capacity": 3,
+        "range": 1,
+        "lifetime": 1
+      },
+      {
+        "playerId": 2,
+        "position": {
+          "x": 20,
+          "y": 20
+        },
+        "speed": 1,
+        "capacity": 3,
+        "range": 1,
+        "lifetime": 3
+      },
+      {
+        "playerId": 3,
+        "position": {
+          "x": 18,
+          "y": 20
+        },
+        "speed": 1,
+        "capacity": 3,
+        "range": 1,
+        "lifetime": 3
+      },
+      {
+        "playerId": 4,
+        "position": {
+          "x": 20,
+          "y": 18
+        },
+        "speed": 1,
+        "capacity": 3,
+        "range": 1,
+        "lifetime": 3
+      }
+    ],
+    "walls": [],
+    "crates": [],
+    "bubbles": []
+  },
+  "rounds": [
+    {
+      "roundId": 1,
+      "actions": [
+        {
+          "playerId": 1,
+          "direction": "right",
+          "placements": [
+            {
+              "x": 1,
+              "y": 0
+            },
+            {
+              "x": 2,
+              "y": 0
+            },
+            {
+              "x": 3,
+              "y": 0
+            }
+          ]
+        },
+        {
+          "playerId": 2,
+          "direction": "wait",
+          "placements": []
+        },
+        {
+          "playerId": 3,
+          "direction": "wait",
+          "placements": []
+        },
+        {
+          "playerId": 4,
+          "direction": "wait",
+          "placements": []
+        }
+      ]
+    },
+    {
+      "roundId": 2,
+      "actions": [
+        {
+          "playerId": 1,
+          "direction": "wait",
+          "placements": []
+        },
+        {
+          "playerId": 2,
+          "direction": "wait",
+          "placements": []
+        },
+        {
+          "playerId": 3,
+          "direction": "wait",
+          "placements": []
+        },
+        {
+          "playerId": 4,
+          "direction": "wait",
+          "placements": []
+        }
+      ]
+    }
+  ],
+  "expected": {
+    "players": [
+      {
+        "playerId": 1,
+        "position": {
+          "x": 3,
+          "y": 0
+        },
+        "point": {
+          "x": 3,
+          "y": 0
+        },
+        "deathTick": {
+          "numerator": 4,
+          "denominator": 3
+        },
+        "ownedBubblesAtDeath": 0
+      },
+      {
+        "playerId": 2,
+        "position": {
+          "x": 20,
+          "y": 20
+        },
+        "point": {
+          "x": 20,
+          "y": 20
+        },
+        "deathTick": null,
+        "ownedBubblesAtDeath": 0
+      },
+      {
+        "playerId": 3,
+        "position": {
+          "x": 18,
+          "y": 20
+        },
+        "point": {
+          "x": 18,
+          "y": 20
+        },
+        "deathTick": null,
+        "ownedBubblesAtDeath": 0
+      },
+      {
+        "playerId": 4,
+        "position": {
+          "x": 20,
+          "y": 18
+        },
+        "point": {
+          "x": 20,
+          "y": 18
+        },
+        "deathTick": null,
+        "ownedBubblesAtDeath": 0
+      }
+    ],
+    "bubbles": [
+      {
+        "id": 1,
+        "ownerId": 1,
+        "position": {
+          "x": 1,
+          "y": 0
+        },
+        "placedAt": {
+          "numerator": 1,
+          "denominator": 3
+        },
+        "dueAt": {
+          "numerator": 4,
+          "denominator": 3
+        },
+        "explodedAt": {
+          "numerator": 4,
+          "denominator": 3
+        },
+        "sourceBubbleId": null
+      },
+      {
+        "id": 2,
+        "ownerId": 1,
+        "position": {
+          "x": 2,
+          "y": 0
+        },
+        "placedAt": {
+          "numerator": 2,
+          "denominator": 3
+        },
+        "dueAt": {
+          "numerator": 5,
+          "denominator": 3
+        },
+        "explodedAt": {
+          "numerator": 4,
+          "denominator": 3
+        },
+        "sourceBubbleId": 1
+      },
+      {
+        "id": 3,
+        "ownerId": 1,
+        "position": {
+          "x": 3,
+          "y": 0
+        },
+        "placedAt": 1,
+        "dueAt": 2,
+        "explodedAt": {
+          "numerator": 4,
+          "denominator": 3
+        },
+        "sourceBubbleId": 2
+      }
+    ],
+    "destroyedCrates": [],
+    "deadPlacementSkips": 0,
+    "ignoredDeadActions": 0,
+    "checkpoints": [],
+    "events": [
+      {
+        "kind": "exploded",
+        "count": 3,
+        "time": {
+          "numerator": 4,
+          "denominator": 3
+        }
+      },
+      {
+        "kind": "exploded",
+        "count": 0,
+        "time": {
+          "numerator": 5,
+          "denominator": 3
+        }
+      },
+      {
+        "kind": "exploded",
+        "count": 0,
+        "time": 2
+      }
+    ]
+  }
+}
