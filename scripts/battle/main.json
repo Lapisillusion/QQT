@@ -1,0 +1,31 @@
+{
+  "name":"four-player-nine-round-match",
+  "config":{"playerCount":4,"seed":42},
+  "spawns":[{"x":0,"y":0},{"x":0,"y":20},{"x":20,"y":20},{"x":20,"y":0}],
+  "rounds":[
+    [{"direction":"right","placements":[{"x":1,"y":0}]},{"direction":"right","placements":[{"x":1,"y":20}]},{"direction":"left","placements":[{"x":19,"y":20}]},{"direction":"left","placements":[{"x":19,"y":0}]}],
+    [{"direction":"left","placements":[]},{"direction":"left","placements":[]},{"direction":"right","placements":[]},{"direction":"right","placements":[]}],
+    [{"direction":"down","placements":[]},{"direction":"up","placements":[]},{"direction":"up","placements":[]},{"direction":"down","placements":[]}],
+    [{"direction":"wait","placements":[]},{"direction":"wait","placements":[]},{"direction":"wait","placements":[]},{"direction":"wait","placements":[]}],
+    [{"direction":"up","placements":[]},{"direction":"wait","placements":[]},{"direction":"down","placements":[]},{"direction":"up","placements":[]}],
+    [{"direction":"right","placements":[]},{"direction":"wait","placements":[]},{"direction":"left","placements":[]},{"direction":"left","placements":[]}],
+    [{"direction":"wait","placements":[{"x":1,"y":0}]},{"direction":"wait","placements":[]},{"direction":"wait","placements":[{"x":19,"y":20}]},{"direction":"wait","placements":[{"x":19,"y":0}]}],
+    [{"direction":"wait","placements":[]},{"direction":"wait","placements":[]},{"direction":"wait","placements":[]},{"direction":"wait","placements":[]}],
+    [{"direction":"wait","placements":[]},{"direction":"wait","placements":[]},{"direction":"wait","placements":[]},{"direction":"wait","placements":[]}]
+  ],
+  "positions":[
+    [{"x":1,"y":0},{"x":1,"y":20},{"x":19,"y":20},{"x":19,"y":0}],
+    [{"x":0,"y":0},{"x":0,"y":20},{"x":20,"y":20},{"x":20,"y":0}],
+    [{"x":0,"y":1},{"x":0,"y":19},{"x":20,"y":19},{"x":20,"y":1}],
+    [{"x":0,"y":1},{"x":0,"y":19},{"x":20,"y":19},{"x":20,"y":1}],
+    [{"x":0,"y":0},{"x":0,"y":19},{"x":20,"y":20},{"x":20,"y":0}],
+    [{"x":1,"y":0},{"x":0,"y":19},{"x":19,"y":20},{"x":19,"y":0}],
+    [{"x":1,"y":0},{"x":0,"y":19},{"x":19,"y":20},{"x":19,"y":0}],
+    [{"x":1,"y":0},{"x":0,"y":19},{"x":19,"y":20},{"x":19,"y":0}],
+    [{"x":1,"y":0},{"x":0,"y":19},{"x":19,"y":20},{"x":19,"y":0}]
+  ],
+  "queryRound":2,"outsideTargets":[2,3,4,1],
+  "bubbleCounts":[4,4,4,0,0,0,3,3,0],
+  "destroyedCrates":[{"x":2,"y":0},{"x":18,"y":0},{"x":2,"y":20},{"x":18,"y":20}],
+  "expected":{"time":{"numerator":9,"denominator":1},"winnerId":2,"walls":100,"crates":325,"bubbles":0,"placed":7,"exploded":7,"destroyed":4,"dead":3,"alive":1}
+}

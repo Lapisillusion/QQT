@@ -1,0 +1,11 @@
+{
+  "playerCount":2,"manualTickAdvance":false,"seed":42,
+  "initial":{
+    "map":"empty",
+    "players":[{"playerId":1,"position":{"x":5,"y":6}},{"playerId":2,"position":{"x":10,"y":10}}],
+    "bubbles":[
+      {"ownerId":2,"position":{"x":5,"y":5},"placedAt":{"numerator":-5,"denominator":2},"dueAt":{"numerator":1,"denominator":2}},
+      {"ownerId":2,"position":{"x":15,"y":15},"placedAt":0,"dueAt":3}
+    ]
+  }
+}

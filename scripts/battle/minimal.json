@@ -1,0 +1,7 @@
+{
+  "name": "two-clients-one-round",
+  "config": {"playerCount": 2, "manualTickAdvance": true, "seed": 42},
+  "spawns": [{"x":0,"y":0},{"x":0,"y":20}],
+  "plans": [{"direction":"right","placements":[]},{"direction":"up","placements":[]}],
+  "expected": {"time":{"numerator":1,"denominator":1},"positions":[{"x":1,"y":0},{"x":0,"y":19}],"alive":2,"bubbles":0,"crates":329}
+}

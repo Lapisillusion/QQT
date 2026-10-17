@@ -9,7 +9,7 @@ public sealed partial class GameSimulation
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         if (!_roundPrepared || Ended) throw new InvalidOperationException("只能在新轮准备后生成冻结观察。");
-        if (playerId is < 1 or > 4 || !_players[playerId - 1].Alive) throw new InvalidDataException("仅存活玩家可获取观察。");
+        if (playerId < 1 || playerId > PlayerCount || !_players[playerId - 1].Alive) throw new InvalidDataException("仅存活玩家可获取观察。");
         return new PlayerObservation(this, playerId);
     }
 

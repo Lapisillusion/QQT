@@ -118,7 +118,7 @@ public sealed partial class GameSimulation
         {
             var position = new Position(cell % Size, cell / Size); var item = _items[cell];
             bool picked = false;
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < PlayerCount; i++)
             {
                 ref var player = ref _players[i];
                 if (!player.Alive || player.Position != position || player.Point != ExactPosition.Center(position)) continue;
@@ -134,9 +134,10 @@ public sealed partial class GameSimulation
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         if (Ended) throw new InvalidOperationException("已结束的对局不能准备新轮。");
+        if (_executing) throw new InvalidOperationException("模拟期间不能开启新轮。");
         if (_roundPrepared) return;
         _eventCount = _moveCount = 0; _roundPrepared = true; _phase = SimulationPhase.RoundStart;
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < PlayerCount; i++)
         {
             ref var player = ref _players[i]; var gains = player.Pending;
             player.Pending = default;

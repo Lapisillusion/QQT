@@ -2,7 +2,7 @@ namespace QQT.Core;
 
 public enum Cell : byte { Empty, Wall, Crate }
 public enum Direction : byte { Wait, Up, Down, Left, Right }
-public enum EventKind : byte { Move, Blocked, Placed, Exploded, Covered, CrateDestroyed, Safety, PlacementSkipped, Death, ActionIgnored, Chained, MatchEnded, Entered, ReturnStarted, Returned, State, InitialBubble, ItemGenerated, ItemExposed, ItemDestroyed, ItemPicked, AttributeActivated }
+public enum EventKind : byte { Move, Blocked, Placed, Exploded, Covered, CrateDestroyed, Safety, PlacementSkipped, Death, ActionIgnored, Chained, MatchEnded, Entered, ReturnStarted, Returned, State, InitialBubble, ItemGenerated, ItemExposed, ItemDestroyed, ItemPicked, AttributeActivated, Disconnected }
 public enum SkipReason : byte { None, Dead, NotReached, Capacity }
 
 public readonly record struct Position(int X, int Y)

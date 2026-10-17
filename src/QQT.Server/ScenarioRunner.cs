@@ -80,7 +80,7 @@ public sealed partial class ScenarioRunner : IAsyncDisposable
         {
             using var script = ScenarioScript.Load(_options.ScriptPath, _options.MaxScriptTicks);
             await _gate.WaitAsync(_stopping);
-            try { _totalTicks = script.TotalTicks; _scenarioName = script.Name; if (script.Initial is { } initial) _world.Configure(initial); ConfigureWorldItems(script); StoreAndLogEvents(); }
+            try { _world.Reset(script.PlayerCount); _totalTicks = script.TotalTicks; _scenarioName = script.Name; if (script.Initial is { } initial) _world.Configure(initial); ConfigureWorldItems(script); StoreAndLogEvents(); }
             finally { _gate.Release(); }
             _log.Started(_runId, script.Name);
             _log.ItemsConfigured(_runId, _world);
@@ -164,75 +164,8 @@ public sealed partial class ScenarioRunner : IAsyncDisposable
         finally { _messages.Return(message); }
     }
 
-    private void WriteSnapshot(Utf8JsonWriter w, bool animate)
-    {
-        w.WriteStartObject();
-        w.WriteString("type", "frame"); w.WriteString("runId", _runId); w.WriteString("status", _status);
-        w.WriteString("error", _error); w.WriteString("name", _scenarioName); w.WriteNumber("totalTicks", _totalTicks); w.WriteNumber("tick", _world.Tick); w.WriteNumber("size", GameSimulation.Size);
-        WriteTime(w, "time", _world.Time); w.WriteNumber("durationMs", _options.AnimationMilliseconds); w.WriteBoolean("animate", animate);
-        w.WriteBoolean("ended", _world.Ended);
-        if (_world.WinnerId is { } winner) w.WriteNumber("winnerId", winner); else w.WriteNull("winnerId");
-        if (_world.EndTick is { } endedAt) WriteTime(w, "endTick", endedAt); else w.WriteNull("endTick");
-        w.WriteNumber("crateCount", _world.CrateCount); w.WriteNumber("bubbleCount", _world.BubbleCount);
-        w.WriteStartArray("terrain");
-        foreach (var cell in _world.Terrain) w.WriteNumberValue((int)cell);
-        w.WriteEndArray();
-        w.WriteStartArray("players");
-        foreach (var p in _world.Players)
-        {
-            w.WriteStartObject(); w.WriteNumber("id", p.Id); WritePosition(w, "position", p.Position); w.WriteBoolean("hit", p.Hit); w.WriteBoolean("alive", p.Alive);
-            if (p.DeathTick is { } diedAt) WriteTime(w, "deathTick", diedAt); else w.WriteNull("deathTick");
-            WritePoint(w, "point", p.Point); w.WriteNumber("speed", p.Speed); w.WriteNumber("capacity", p.Capacity); w.WriteNumber("range", p.Range); WriteTime(w, "lifetime", p.Lifetime); w.WriteNumber("vision", p.Vision); WriteGains(w, "pending", p.Pending); w.WriteEndObject();
-        }
-        w.WriteEndArray(); WriteItems(w); w.WriteStartArray("bubbles");
-        foreach (var b in _world.Bubbles)
-        {
-            w.WriteStartObject(); w.WriteNumber("id", b.Id); w.WriteNumber("ownerId", b.OwnerId); WritePosition(w, "position", b.Position);
-            WriteTime(w, "placedAt", b.PlacedAt); WriteTime(w, "dueAt", b.DueAt); w.WriteNumber("range", _world.Players[b.OwnerId - 1].Range); w.WriteEndObject();
-        }
-        w.WriteEndArray(); w.WriteStartArray("moves");
-        if (animate) foreach (var m in _world.Moves)
-        {
-            w.WriteStartObject(); w.WriteNumber("playerId", m.PlayerId); WritePoint(w, "from", m.From); WritePoint(w, "to", m.To); WriteTime(w, "start", m.Start); WriteTime(w, "end", m.End); w.WriteEndObject();
-        }
-        w.WriteEndArray(); w.WriteStartArray("events");
-        for (int i = 0; i < _historyCount; i++)
-        {
-            var e = _history[i]; w.WriteStartObject(); w.WriteNumber("sequence", i + 1); w.WriteString("kind", EventName(e.Kind));
-            WriteTime(w, "tick", e.Tick); w.WriteNumber("roundId", e.RoundId); WritePoint(w, "point", e.Point); WriteTime(w, "relatedTime", e.RelatedTime); w.WriteNumber("playerId", e.PlayerId); w.WriteNumber("bubbleId", e.BubbleId);
-            WritePosition(w, "position", e.Position); WritePosition(w, "from", e.From); w.WriteBoolean("success", e.Success);
-            w.WriteString("itemType", ItemNames.Name(e.ItemType)); w.WriteNumber("previousValue", e.PreviousValue);
-            w.WriteString("phase", e.Phase switch { SimulationPhase.Initialization => "initialization", SimulationPhase.RoundStart => "roundStart", _ => "execution" }); WriteAttributes(w, e.Attributes); WriteGains(w, "pending", e.Pending);
-            w.WriteNumber("value", e.Value); w.WriteString("reason", e.Reason switch { SkipReason.Dead => "dead", SkipReason.NotReached => "notReached", SkipReason.Capacity => "capacity", _ => "none" }); w.WriteEndObject();
-        }
-        w.WriteEndArray();
-        if (_result is { } r)
-        {
-            w.WriteStartObject("result"); w.WriteBoolean("passed", r.Passed); w.WriteNumber("safePlayers", r.SafePlayers);
-            w.WriteNumber("walls", r.Walls); w.WriteNumber("placed", r.Placed); w.WriteNumber("exploded", r.Exploded);
-            w.WriteNumber("destroyed", r.Destroyed); w.WriteBoolean("mapMatches", r.MapMatches); w.WriteNumber("deadPlayers", r.DeadPlayers);
-            w.WriteNumber("deaths", r.Deaths); w.WriteBoolean("playersMatch", r.PlayersMatch); w.WriteBoolean("bubblesMatch", r.BubblesMatch); w.WriteBoolean("actionsMatch", r.ActionsMatch); w.WriteBoolean("outcomeMatches", r.OutcomeMatches); w.WriteBoolean("itemsMatch", r.ItemsMatch); w.WriteBoolean("attributesMatch", r.AttributesMatch); w.WriteBoolean("observationsMatch", r.ObservationsMatch); w.WriteEndObject();
-        }
-        w.WriteEndObject(); w.Flush();
-    }
-    private static void WriteTime(Utf8JsonWriter w, string name, RationalTime time) { w.WritePropertyName(name); time.Write(w); }
-    private static void WritePoint(Utf8JsonWriter w, string name, ExactPosition point)
-    {
-        w.WriteStartObject(name); WriteTime(w, "x", point.X); WriteTime(w, "y", point.Y); w.WriteEndObject();
-    }
-    private static void WritePosition(Utf8JsonWriter w, string name, Position p)
-    {
-        w.WriteStartObject(name); w.WriteNumber("x", p.X); w.WriteNumber("y", p.Y); w.WriteEndObject();
-    }
-    private static string EventName(EventKind kind) => kind switch
-    {
-        EventKind.ItemGenerated => "itemGenerated", EventKind.ItemExposed => "itemExposed", EventKind.ItemDestroyed => "itemDestroyed",
-        EventKind.ItemPicked => "itemPicked", EventKind.AttributeActivated => "attributeActivated",
-        EventKind.State => "state", EventKind.InitialBubble => "initialBubble", EventKind.Entered => "entered", EventKind.ReturnStarted => "returnStarted", EventKind.Returned => "returned", EventKind.Move => "move", EventKind.Blocked => "blocked", EventKind.Placed => "placed",
-        EventKind.Exploded => "exploded", EventKind.Covered => "covered", EventKind.CrateDestroyed => "crateDestroyed",
-        EventKind.Chained => "chained", EventKind.MatchEnded => "matchEnded",
-        EventKind.Safety => "safety", EventKind.Death => "death", EventKind.ActionIgnored => "actionIgnored", _ => "placementSkipped"
-    };
+    private void WriteSnapshot(Utf8JsonWriter w, bool animate) => WorldFrame.Write(w, _world, _history.AsSpan(0, _historyCount), _historyCount,
+        _runId, _status, _error, _scenarioName, _totalTicks, _result, _options.AnimationMilliseconds, animate);
     public async ValueTask DisposeAsync()
     {
         if (_runTask is { } task) await task;

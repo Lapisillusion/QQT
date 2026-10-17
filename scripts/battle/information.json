@@ -1,0 +1,37 @@
+{
+  "name":"three-player-information-and-lock",
+  "config":{
+    "playerCount":3,"seed":42,
+    "initial":{
+      "map":"empty",
+      "players":[
+        {"playerId":1,"position":{"x":1,"y":1}},
+        {"playerId":2,"position":{"x":2,"y":1},"speed":2,"capacity":4,"range":3,"vision":3},
+        {"playerId":3,"position":{"x":10,"y":10}}
+      ],
+      "bubbles":[
+        {"ownerId":1,"position":{"x":1,"y":1},"placedAt":0,"dueAt":3},
+        {"ownerId":2,"position":{"x":12,"y":12},"placedAt":0,"dueAt":3}
+      ]
+    }
+  },
+  "expectedPlayers":[
+    {"playerId":1,"position":{"x":1,"y":1},"speed":1,"bubbleCapacity":3,"blastRange":1,"visionWidth":5,"activeBubbleCount":1},
+    {"playerId":2,"position":{"x":2,"y":1},"speed":2,"bubbleCapacity":4,"blastRange":3,"visionWidth":7,"activeBubbleCount":1},
+    {"playerId":3,"position":{"x":10,"y":10},"speed":1,"bubbleCapacity":3,"blastRange":1,"visionWidth":5,"activeBubbleCount":0}
+  ],
+  "queries":[
+    {"targetType":"player","targetId":2,"cost":2,"balance":8},
+    {"targetType":"player","targetId":3,"cost":3,"balance":5},
+    {"targetType":"bubble","targetId":1,"requestId":"same-bubble","cost":1,"balance":4},
+    {"targetType":"bubble","targetId":1,"requestId":"same-bubble","cost":1,"balance":3},
+    {"targetType":"player","targetId":3,"cost":3,"balance":0}
+  ],
+  "invalidPlans":[
+    {"direction":"diagonal","placements":[]},
+    {"direction":"wait","placements":[{"x":1,"y":1},{"x":1,"y":1}]},
+    {"direction":"right","placements":[{"x":1,"y":2}]}
+  ],
+  "plan":{"direction":"wait","placements":[]},
+  "expected":{"time":{"numerator":1,"denominator":1},"winnerId":1,"bubbleCount":2,"exploded":0}
+}

@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace QQT.Core;
 
-/// <summary>有限轮次的四人验证脚本；计划和 JSON 预期由本对象持有并在运行结束归还。</summary>
+/// <summary>有限轮次的验证脚本；计划和 JSON 预期由本对象持有并在运行结束归还。</summary>
 public sealed class ScenarioScript : IDisposable
 {
     private PlayerAction[]? _actions;
@@ -11,15 +11,16 @@ public sealed class ScenarioScript : IDisposable
     private JsonDocument? _document;
     public string Name { get; private set; } = "M0";
     public int TotalTicks { get; }
+    public int PlayerCount { get; }
     public JsonElement? Initial => _document!.RootElement.TryGetProperty("initial", out var initial) ? initial : null;
     public JsonElement? Items => _document!.RootElement.TryGetProperty("items", out var items) ? items : null;
     public JsonElement Expected => _document?.RootElement.GetProperty("expected") ?? throw new ObjectDisposedException(nameof(ScenarioScript));
 
-    private ScenarioScript(int totalTicks)
+    private ScenarioScript(int totalTicks, int playerCount)
     {
-        TotalTicks = totalTicks;
-        _actions = ArrayPool<PlayerAction>.Shared.Rent(totalTicks * 4);
-        try { _placements = ArrayPool<Position>.Shared.Rent(checked(totalTicks * 4 * GameSimulation.Size)); }
+        TotalTicks = totalTicks; PlayerCount = playerCount;
+        _actions = ArrayPool<PlayerAction>.Shared.Rent(totalTicks * playerCount);
+        try { _placements = ArrayPool<Position>.Shared.Rent(checked(totalTicks * playerCount * GameSimulation.Size)); }
         catch { ArrayPool<PlayerAction>.Shared.Return(_actions, true); _actions = null; throw; }
     }
 
@@ -34,8 +35,10 @@ public sealed class ScenarioScript : IDisposable
             int totalTicks = root.GetProperty("totalTicks").GetInt32();
             if (totalTicks < 1 || totalTicks > maxTicks)
                 throw new InvalidDataException($"脚本轮数必须在 1~{maxTicks} 之间。");
-            script = new ScenarioScript(totalTicks) { _document = document };
-            script._actions!.AsSpan(0, totalTicks * 4).Clear();
+            int playerCount = root.TryGetProperty("playerCount", out var n) ? n.GetInt32() : 4;
+            if (playerCount is < 2 or > 4) throw new InvalidDataException("脚本人数必须在 2~4 之间。");
+            script = new ScenarioScript(totalTicks, playerCount) { _document = document };
+            script._actions!.AsSpan(0, totalTicks * playerCount).Clear();
             script.Name = root.GetProperty("name").GetString() ?? "M0";
             var rounds = root.GetProperty("rounds");
             if (rounds.GetArrayLength() != totalTicks)
@@ -46,13 +49,13 @@ public sealed class ScenarioScript : IDisposable
                 if (round.GetProperty("roundId").GetInt32() != r + 1)
                     throw new InvalidDataException("脚本轮次必须连续且从 1 开始。");
                 var actions = round.GetProperty("actions");
-                if (actions.GetArrayLength() != 4)
-                    throw new InvalidDataException($"第 {r + 1} 轮缺少四人完整动作。");
-                for (int a = 0; a < 4; a++)
+                if (actions.GetArrayLength() != playerCount)
+                    throw new InvalidDataException($"第 {r + 1} 轮缺少完整动作。");
+                for (int a = 0; a < playerCount; a++)
                 {
                     var json = actions[a];
                     int id = json.GetProperty("playerId").GetInt32();
-                    if (id is < 1 or > 4 || script._actions![r * 4 + id - 1].PlayerId != 0)
+                    if (id < 1 || id > playerCount || script._actions![r * playerCount + id - 1].PlayerId != 0)
                         throw new InvalidDataException("玩家编号非法或重复。");
                     var direction = json.GetProperty("direction").GetString() switch
                     {
@@ -63,14 +66,14 @@ public sealed class ScenarioScript : IDisposable
                     var placements = json.GetProperty("placements");
                     int count = placements.GetArrayLength();
                     if (count > GameSimulation.Size) throw new InvalidDataException("放置点超过直线路径的格数。");
-                    int offset = (r * 4 + id - 1) * GameSimulation.Size;
+                    int offset = (r * playerCount + id - 1) * GameSimulation.Size;
                     for (int k = 0; k < count; k++)
                     {
                         var point = ReadPosition(placements[k]);
                         for (int j = 0; j < k; j++) if (script._placements![offset + j] == point) throw new InvalidDataException("同轮放置点重复。");
                         script._placements![offset + k] = point;
                     }
-                    script._actions![r * 4 + id - 1] = new(id, direction, null) { Placements = script._placements.AsMemory(offset, count) };
+                    script._actions![r * playerCount + id - 1] = new(id, direction, null) { Placements = script._placements.AsMemory(offset, count) };
                 }
             }
             script.CheckExpected();
@@ -87,8 +90,8 @@ public sealed class ScenarioScript : IDisposable
     {
         var expected = Expected;
         var players = expected.GetProperty("players");
-        if (players.GetArrayLength() != 4) throw new InvalidDataException("预期必须声明四人。");
-        for (int i = 0; i < 4; i++)
+        if (players.GetArrayLength() != PlayerCount) throw new InvalidDataException("预期必须声明实际参赛人数。");
+        for (int i = 0; i < PlayerCount; i++)
         {
             var row = players[i]; ReadPosition(row.GetProperty("position"));
             if (row.GetProperty("playerId").GetInt32() != i + 1) throw new InvalidDataException("预期玩家按编号排列。");
@@ -102,13 +105,13 @@ public sealed class ScenarioScript : IDisposable
             foreach (var row in observations.EnumerateArray())
             {
                 int round = row.GetProperty("roundId").GetInt32();
-                if (round < 1 || round > TotalTicks || row.GetProperty("playerId").GetInt32() is < 1 or > 4)
+                if (round < 1 || round > TotalTicks || (row.GetProperty("playerId").GetInt32() < 1 || row.GetProperty("playerId").GetInt32() > PlayerCount))
                     throw new InvalidDataException("观察断言的轮次或玩家非法。");
             }
         int id = 0;
         foreach (var bubble in expected.GetProperty("bubbles").EnumerateArray())
         {
-            if (bubble.GetProperty("id").GetInt32() != ++id || bubble.GetProperty("ownerId").GetInt32() is < 1 or > 4) throw new InvalidDataException("预期泡泡编号或归属非法。");
+            if (bubble.GetProperty("id").GetInt32() != ++id || (bubble.GetProperty("ownerId").GetInt32() < 1 || bubble.GetProperty("ownerId").GetInt32() > PlayerCount)) throw new InvalidDataException("预期泡泡编号或归属非法。");
             ReadPosition(bubble.GetProperty("position"));
             var placed = RationalTime.Read(bubble.GetProperty("placedAt"));
             bool initial = bubble.TryGetProperty("initial", out var init) && init.GetBoolean();
@@ -123,7 +126,7 @@ public sealed class ScenarioScript : IDisposable
         if (expected.TryGetProperty("end", out var end))
         {
             var at = RationalTime.Read(end.GetProperty("tick"));
-            if (at < 0 || at > TotalTicks || (end.GetProperty("winnerId").ValueKind != JsonValueKind.Null && end.GetProperty("winnerId").GetInt32() is < 1 or > 4)) throw new InvalidDataException("预期终局非法。");
+            if (at < 0 || at > TotalTicks || (end.GetProperty("winnerId").ValueKind != JsonValueKind.Null && (end.GetProperty("winnerId").GetInt32() < 1 || end.GetProperty("winnerId").GetInt32() > PlayerCount))) throw new InvalidDataException("预期终局非法。");
         }
         foreach (var point in expected.GetProperty("destroyedCrates").EnumerateArray()) ReadPosition(point);
         if (expected.GetProperty("deadPlacementSkips").GetInt32() < 0 || expected.GetProperty("ignoredDeadActions").GetInt32() < 0) throw new InvalidDataException("预期计数不能为负。");
@@ -140,7 +143,7 @@ public sealed class ScenarioScript : IDisposable
     {
         ObjectDisposedException.ThrowIf(_actions is null, this);
         if (tick < 1 || tick > TotalTicks) throw new ArgumentOutOfRangeException(nameof(tick));
-        return _actions.AsSpan((tick - 1) * 4, 4);
+        return _actions.AsSpan((tick - 1) * PlayerCount, PlayerCount);
     }
 
     public void Dispose()

@@ -15,6 +15,10 @@ function element<T extends HTMLElement>(id: string): T { return document.getElem
 const canvas = element<HTMLCanvasElement>("map");
 const context = canvas.getContext("2d")!;
 const start = element<HTMLButtonElement>("start");
+const demonstrate = element<HTMLButtonElement>("demonstrate");
+const createMatch = element<HTMLButtonElement>("create-match");
+type Session = { type: "session.state"; gameId: string; payload: { phase: string; playerCount: number; registeredCount: number; manualTickAdvance: boolean; seed: number; nextRoundId: number; canStart: boolean; canDemonstrate: boolean; waitingPlayerIds: number[] } };
+let session: Session | null = null;
 const connection = element("connection");
 const status = element("status");
 const tick = element("tick");
@@ -74,7 +78,8 @@ function eventText(e: GameEvent): string {
     case "placed": return `玩家 ${e.playerId} 在 ${gridName(e.position)} 放置泡泡 #${e.bubbleId}，t=${exact(e.relatedTime)} 到期`;
     case "exploded": return `泡泡 #${e.bubbleId} 在 ${gridName(e.position)} 爆炸`;
     case "chained": return `泡泡 #${e.value} 连锁引爆 ${gridName(e.position)} 的泡泡 #${e.bubbleId}`;
-    case "matchEnded": return e.playerId > 0 ? `对局结束：玩家 ${e.playerId} 获胜` : "对局结束：全部淘汰，平局";
+    case "disconnected": return `玩家 ${e.playerId} 掉线淘汰`;
+    case "matchEnded": return e.playerId > 0 ? `对局结束：玩家 ${e.playerId} 获胜` : "对局结束：平局";
     case "crateDestroyed": return `${gridName(e.position)} 箱子销毁`;
     case "safety": return `玩家 ${e.playerId} 在 ${gridName(e.position)}：${e.success ? "安全" : "受击"}`;
     case "death": return `玩家 ${e.playerId} 在 ${gridName(e.position)} 死亡，保留 ${e.value} 颗在场泡泡`;
@@ -95,6 +100,7 @@ function applyFrame(frame: Frame, now: number): void {
   progress.style.width = `${frame.ended ? 100 : frame.totalTicks > 0 ? frame.tick / frame.totalTicks * 100 : 0}%`;
   bubbles.textContent = String(frame.bubbleCount);
   crates.textContent = String(frame.crateCount);
+  if (players.children.length !== frame.players.length) initializePlayerCards(frame.players.length);
   let safeCount = 0;
   for (const p of frame.players) {
     if (p.alive) safeCount++;
@@ -106,7 +112,7 @@ function applyFrame(frame: Frame, now: number): void {
   }
   safe.textContent = String(safeCount);
   status.textContent = frame.status === "running" ? "验证进行中" : frame.status === "passed" ? "验证通过" : frame.status === "failed" ? "验证失败" : frame.status === "error" ? "运行错误" : "准备就绪";
-  const outcome = frame.ended ? `${frame.winnerId === null ? "全部淘汰，平局" : `玩家 ${frame.winnerId} 获胜`}（t=${exact(frame.endTick!)}）` : "";
+  const outcome = frame.ended ? `${frame.winnerId === null ? "平局" : `玩家 ${frame.winnerId} 获胜`}（t=${exact(frame.endTick!)}）` : "";
   if (outcome) status.textContent += ` · ${outcome}`;
   result.className = "result";
   if (frame.status === "passed") {
@@ -130,11 +136,13 @@ function applyFrame(frame: Frame, now: number): void {
   displayedAttributeSequence = loggedSequence;
   start.textContent = frame.tick > 0 ? "重新运行 ↗" : "开始验证 ↗";
   start.disabled = socket?.readyState !== WebSocket.OPEN || frame.status === "running";
+  if (session) renderSession();
 }
 
 // 四张卡片按页面生命周期持有，消息和动画事件只改值，避免逐 tick 重建 DOM。
-function initializePlayerCards(): void {
-  for (let id = 1; id <= 4; id++) {
+function initializePlayerCards(count = 4): void {
+  players.replaceChildren();
+  for (let id = 1; id <= count; id++) {
     const card = document.createElement("article"); card.className = "player player-card";
     card.style.setProperty("--player-color", colors[id - 1]); card.setAttribute("aria-label", `玩家 ${id} 实时属性`);
     card.innerHTML = `<div class="player-header"><span class="player-id">${id}</span><div class="player-heading"><strong>玩家 ${id}</strong><span class="player-location">—</span></div><span class="player-status">等待</span></div>
@@ -169,8 +177,9 @@ function updateAttributeRow(id: number, values: ItemGains, pending: ItemGains): 
 
 function receive(message: MessageEvent<string>): void {
   // JSON.parse 返回的数据由消息持有；渲染只借用它，不复制数组或生成每帧快照。
-  const data = JSON.parse(message.data) as Frame | { type: "error"; message: string };
-  if (data.type === "error") { result.textContent = data.message; result.className = "result failure"; return; }
+  const data = JSON.parse(message.data) as Frame | Session | { type: "error"; message?: string; payload?: { error: { message: string } } };
+  if (data.type === "session.state") { session = data; renderSession(); return; }
+  if (data.type === "error") { result.textContent = data.message ?? data.payload?.error.message ?? "请求失败"; result.className = "result failure"; return; }
   const now = performance.now();
   if (current?.runId !== data.runId) { placedEvents.clear(); explodedEvents.clear(); destroyedTimes.clear(); exposedItemEvents.clear(); removedItemEvents.clear(); displayedAttributeSequence = 0; }
   for (const event of data.events) {
@@ -195,7 +204,34 @@ function connect(): void {
   socket.onerror = () => { connection.textContent = "连接错误"; };
 }
 start.addEventListener("click", () => {
-  if (socket?.readyState === WebSocket.OPEN) { start.disabled = true; socket.send('{"type":"start"}'); }
+  if (socket?.readyState === WebSocket.OPEN) { start.disabled = true; socket.send(JSON.stringify(session ? {type:"start", gameId:session.gameId} : {type:"start"})); }
+});
+
+function renderSession(): void {
+  const s = session!; const p = s.payload;
+  element("battle-controls").hidden = false;
+  element("seats").textContent = `${p.registeredCount}/${p.playerCount} 已登记`;
+  start.textContent = "开始对战"; start.disabled = !p.canStart || socket?.readyState !== WebSocket.OPEN;
+  demonstrate.hidden = !p.manualTickAdvance; demonstrate.disabled = !p.canDemonstrate;
+  createMatch.disabled = p.phase !== "idle" && p.phase !== "ended" && p.phase !== "aborted";
+  const labels: Record<string,string> = {idle:"等待创建对局",preparing:p.canStart ? "满员就绪，等待开始" : "等待玩家登记",awaitingTick:"等待 tick演示",collecting:`等待决策：${p.waitingPlayerIds.join("、")}`,simulating:"正在模拟",ended:"对战结束",aborted:"对战已中止"};
+  status.textContent = labels[p.phase] ?? p.phase;
+  scenarioFooter.textContent = `联机对战 · ${p.playerCount} 人 · ${p.manualTickAdvance ? "逐帧" : "自动"} · seed=${p.seed}`;
+  if (current?.ended) {
+    const outcome = current.winnerId === null ? "平局" : `玩家 ${current.winnerId} 获胜`;
+    result.textContent = `${outcome}（t=${exact(current.endTick!)}）`; result.className="result success";
+  } else if (p.phase !== "aborted") { result.textContent = "按各客户端提交的计划推进对战。"; result.className="result"; }
+}
+createMatch.addEventListener("click", () => {
+  const payload: { playerCount: number; manualTickAdvance: boolean; seed?: number } = {playerCount:Number(element<HTMLSelectElement>("player-count").value),manualTickAdvance:element<HTMLInputElement>("manual-tick").checked};
+  const seed = element<HTMLInputElement>("spawn-seed").value.trim();
+  if (seed !== "") payload.seed = Number(seed);
+  socket?.send(JSON.stringify({type:"match.create", payload}));
+});
+demonstrate.addEventListener("click", () => {
+  if (!session) return;
+  demonstrate.disabled = true;
+  socket?.send(JSON.stringify({type:"tick.demonstrate",gameId:session.gameId,roundId:session.payload.nextRoundId,requestId:`ui-${Date.now()}`}));
 });
 
 function resize(): void {

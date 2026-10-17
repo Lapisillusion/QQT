@@ -9,11 +9,12 @@ public static class Program
 {
     public static async Task<int> Main(string[] args)
     {
-        bool verify = false;
+        bool verify = false, battle = false;
         string? scriptOverride = null;
         for (int i = 0; i < args.Length; i++)
         {
             if (args[i] == "--verify") verify = true;
+            else if (args[i] == "--battle") battle = true;
             else if (args[i] == "--script" && i + 1 < args.Length) scriptOverride = Path.GetFullPath(args[++i]);
             else throw new ArgumentException($"不支持的参数：{args[i]}");
         }
@@ -25,13 +26,54 @@ public static class Program
         builder.Services.AddSingleton<ObjectPool<JsonMessageBuffer>>(static services => services.GetRequiredService<ObjectPoolProvider>()
             .Create(new MessageBufferPolicy(services.GetRequiredService<ScenarioOptions>().MessageBufferBytes)));
         builder.Services.AddSingleton<ScenarioRunner>();
+        builder.Services.AddSingleton<BattleCoordinator>();
+        if (battle) builder.Services.AddHostedService(static services => services.GetRequiredService<BattleCoordinator>());
         await using var app = builder.Build();
         if (verify) return await app.Services.GetRequiredService<ScenarioRunner>().VerifyAsync() ? 0 : 1;
         app.UseDefaultFiles(); app.UseStaticFiles(); app.UseWebSockets();
-        app.Map("/ws/ui", HandleUiAsync);
+        if (battle)
+        {
+            app.Map("/ws/ui", context => HandleBattleAsync(context, true));
+            app.Map("/ws/ai", context => HandleBattleAsync(context, false));
+        }
+        else app.Map("/ws/ui", HandleUiAsync);
         app.Logger.LogInformation("M0 ready: open {Address}; script={ScriptPath}", builder.Configuration["Urls"], options.ScriptPath);
         await app.RunAsync();
         return 0;
+    }
+
+    internal static async Task HandleBattleAsync(HttpContext context, bool ui)
+    {
+        if (!context.WebSockets.IsWebSocketRequest) { context.Response.StatusCode = 400; return; }
+        var coordinator = context.RequestServices.GetRequiredService<BattleCoordinator>();
+        var pool = context.RequestServices.GetRequiredService<ObjectPool<JsonMessageBuffer>>();
+        var options = context.RequestServices.GetRequiredService<ScenarioOptions>();
+        var log = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger(ui ? "QQT.Transport.Ui" : "QQT.Transport.Ai");
+        using var socket = await context.WebSockets.AcceptWebSocketAsync();
+        await using var peer = new BattlePeer(socket, pool, ui, coordinator.Closed);
+        var receive = ArrayPool<byte>.Shared.Rent(options.ReceiveBufferBytes);
+        coordinator.Attach(peer);
+        try
+        {
+            while (socket.State == WebSocketState.Open)
+            {
+                int length = 0; ValueWebSocketReceiveResult part;
+                do
+                {
+                    if (length == options.ReceiveBufferBytes) throw new InvalidDataException("消息过长。");
+                    part = await socket.ReceiveAsync(receive.AsMemory(length, options.ReceiveBufferBytes - length), context.RequestAborted);
+                    if (part.MessageType == WebSocketMessageType.Close) return;
+                    if (part.MessageType != WebSocketMessageType.Text) throw new InvalidDataException("仅接受 JSON 文本。");
+                    length += part.Count;
+                } while (!part.EndOfMessage);
+                try { coordinator.Receive(peer, JsonDocument.Parse(receive.AsMemory(0, length))); }
+                catch (JsonException exception) { log.LogWarning(exception, "INVALID_JSON PlayerId={PlayerId}", peer.PlayerId); }
+            }
+        }
+        catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested) { }
+        catch (Exception exception) when (exception is WebSocketException or InvalidDataException or ObjectDisposedException)
+        { log.LogDebug(exception, "CONNECTION_CLOSED PlayerId={PlayerId}", peer.PlayerId); }
+        finally { ArrayPool<byte>.Shared.Return(receive); peer.Stop(); }
     }
 
     private static async Task HandleUiAsync(HttpContext context)

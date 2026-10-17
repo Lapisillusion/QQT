@@ -1,0 +1,20 @@
+{
+  "name":"battle-lifecycle-boundaries",
+  "roomSizes":[2,3,4],"invalidPlayerCounts":[1,5,2.5],"seed":42,
+  "goldenSpawns":[{"x":0,"y":0},{"x":0,"y":20},{"x":20,"y":20},{"x":20,"y":0}],
+  "sameCell":{
+    "playerCount":3,"manualTickAdvance":false,"seed":42,
+    "initial":{"map":"empty","players":[{"playerId":1,"position":{"x":1,"y":1}},{"playerId":2,"position":{"x":2,"y":1}},{"playerId":3,"position":{"x":10,"y":10}}],
+      "bubbles":[{"ownerId":1,"position":{"x":1,"y":1},"placedAt":0,"dueAt":3},{"ownerId":3,"position":{"x":1,"y":1},"placedAt":0,"dueAt":3}]}
+  },
+  "executionFailures":{
+    "playerCount":2,"manualTickAdvance":true,"seed":42,
+    "initial":{"map":"empty","walls":[{"x":2,"y":1}],"crates":[{"x":1,"y":2}],
+      "players":[{"playerId":1,"position":{"x":1,"y":1},"speed":2,"capacity":1},{"playerId":2,"position":{"x":10,"y":10}}],
+      "bubbles":[{"ownerId":1,"position":{"x":8,"y":8},"placedAt":0,"dueAt":3}]},
+    "items":{"mode":"fixed","placements":[{"type":"vision","position":{"x":1,"y":2}}]}
+  },
+  "geometricPlan":{"direction":"right","placements":[{"x":1,"y":1},{"x":3,"y":1}]},
+  "waitPlan":{"direction":"wait","placements":[]},
+  "tickLimit":{"playerCount":2,"manualTickAdvance":false,"seed":42,"intervalMilliseconds":1,"expectedTick":500,"expectedWinner":null,"expectedAlive":2}
+}

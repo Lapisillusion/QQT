@@ -10,12 +10,12 @@
   <main>
     <header>
       <div><p class="eyebrow">QQT / SIMULATION LAB</p><h1 id="scenario-title">M0 脚本验证</h1><p class="subtitle">执行预设动作，核对移动、泡泡与死亡处理。</p></div>
-      <div class="actions"><span id="connection" class="connection">正在连接</span><button id="start" disabled>开始验证 <span>↗</span></button></div>
+      <div class="actions"><div id="battle-controls" hidden><label>人数 <select id="player-count"><option>2</option><option>3</option><option selected>4</option></select></label> <label><input id="manual-tick" type="checkbox">逐帧推进</label> <label>种子 <input id="spawn-seed" type="number" placeholder="随机" style="width:6em"></label> <button id="create-match">创建对局</button> <span id="seats"></span></div><button id="demonstrate" hidden disabled>tick演示</button><span id="connection" class="connection">正在连接</span><button id="start" disabled>开始验证 <span>↗</span></button></div>
     </header>
     <section class="workspace">
       <div class="board-panel">
         <div class="panel-heading"><span><i class="live-dot"></i> 全局场景</span><span>21 × 21 · 场景地图</span></div>
-        <div class="canvas-wrap"><canvas id="map" aria-label="四人泡泡场景地图"></canvas></div>
+        <div class="canvas-wrap"><canvas id="map" aria-label="泡泡对战场景地图"></canvas></div>
         <div class="legend"><span><img src="/icons/item-speed.svg" alt="">移速 +1</span><span><img src="/icons/item-range.svg" alt="">火力 +1</span><span><img src="/icons/item-capacity.svg" alt="">泡泡容量 +1</span><span><img src="/icons/item-vision.svg" alt="">视野半径 +1</span><span><i class="wall"></i>硬墙</span><span><i class="crate"></i>箱子</span><span><i class="bubble"></i>泡泡</span><span>角色上的数字为玩家编号</span></div>
       </div>
       <aside>
