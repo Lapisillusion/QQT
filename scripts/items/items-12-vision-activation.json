@@ -1,0 +1,436 @@
+{
+  "name": "视野下一轮从25格增至49格，新可见道具与玩家正确裁剪",
+  "notes": [
+    "输入及预期在首次游戏运行前按规则、精确分数计算编写；随机分配独立使用标准 Random(42) 种子流计算。",
+    "同一核心驱动正式地图和独立环境；脚本完成不等于竞技终局。"
+  ],
+  "totalTicks": 2,
+  "items": {
+    "mode": "fixed",
+    "placements": [
+      {
+        "position": {
+          "x": 11,
+          "y": 10
+        },
+        "type": "vision"
+      },
+      {
+        "position": {
+          "x": 14,
+          "y": 11
+        },
+        "type": "capacity"
+      },
+      {
+        "position": {
+          "x": 13,
+          "y": 8
+        },
+        "type": "range"
+      },
+      {
+        "position": {
+          "x": 16,
+          "y": 10
+        },
+        "type": "vision"
+      }
+    ]
+  },
+  "initial": {
+    "map": "empty",
+    "players": [
+      {
+        "playerId": 1,
+        "position": {
+          "x": 10,
+          "y": 10
+        },
+        "speed": 1,
+        "capacity": 3,
+        "range": 1,
+        "vision": 2,
+        "lifetime": 10
+      },
+      {
+        "playerId": 2,
+        "position": {
+          "x": 14,
+          "y": 10
+        },
+        "speed": 1,
+        "capacity": 3,
+        "range": 1,
+        "vision": 2,
+        "lifetime": 10
+      },
+      {
+        "playerId": 3,
+        "position": {
+          "x": 18,
+          "y": 20
+        },
+        "speed": 1,
+        "capacity": 3,
+        "range": 1,
+        "vision": 2,
+        "lifetime": 10
+      },
+      {
+        "playerId": 4,
+        "position": {
+          "x": 20,
+          "y": 18
+        },
+        "speed": 1,
+        "capacity": 3,
+        "range": 1,
+        "vision": 2,
+        "lifetime": 10
+      }
+    ],
+    "crates": [
+      {
+        "x": 11,
+        "y": 10
+      },
+      {
+        "x": 14,
+        "y": 11
+      },
+      {
+        "x": 13,
+        "y": 8
+      },
+      {
+        "x": 16,
+        "y": 10
+      }
+    ],
+    "walls": [],
+    "bubbles": [
+      {
+        "ownerId": 4,
+        "position": {
+          "x": 11,
+          "y": 11
+        },
+        "dueAt": 0,
+        "placedAt": -10
+      },
+      {
+        "ownerId": 4,
+        "position": {
+          "x": 14,
+          "y": 12
+        },
+        "dueAt": 0,
+        "placedAt": -10
+      }
+    ]
+  },
+  "rounds": [
+    {
+      "roundId": 1,
+      "actions": [
+        {
+          "playerId": 1,
+          "direction": "right",
+          "placements": []
+        },
+        {
+          "playerId": 2,
+          "direction": "wait",
+          "placements": []
+        },
+        {
+          "playerId": 3,
+          "direction": "wait",
+          "placements": []
+        },
+        {
+          "playerId": 4,
+          "direction": "wait",
+          "placements": []
+        }
+      ]
+    },
+    {
+      "roundId": 2,
+      "actions": [
+        {
+          "playerId": 1,
+          "direction": "wait",
+          "placements": []
+        },
+        {
+          "playerId": 2,
+          "direction": "wait",
+          "placements": []
+        },
+        {
+          "playerId": 3,
+          "direction": "wait",
+          "placements": []
+        },
+        {
+          "playerId": 4,
+          "direction": "wait",
+          "placements": []
+        }
+      ]
+    }
+  ],
+  "expected": {
+    "players": [
+      {
+        "playerId": 1,
+        "position": {
+          "x": 11,
+          "y": 10
+        },
+        "point": {
+          "x": 11,
+          "y": 10
+        },
+        "deathTick": null,
+        "ownedBubblesAtDeath": 0,
+        "speed": 1,
+        "capacity": 3,
+        "range": 1,
+        "vision": 3,
+        "pending": {
+          "speed": 0,
+          "capacity": 0,
+          "range": 0,
+          "vision": 0
+        }
+      },
+      {
+        "playerId": 2,
+        "position": {
+          "x": 14,
+          "y": 10
+        },
+        "point": {
+          "x": 14,
+          "y": 10
+        },
+        "deathTick": null,
+        "ownedBubblesAtDeath": 0,
+        "speed": 1,
+        "capacity": 3,
+        "range": 1,
+        "vision": 2,
+        "pending": {
+          "speed": 0,
+          "capacity": 0,
+          "range": 0,
+          "vision": 0
+        }
+      },
+      {
+        "playerId": 3,
+        "position": {
+          "x": 18,
+          "y": 20
+        },
+        "point": {
+          "x": 18,
+          "y": 20
+        },
+        "deathTick": null,
+        "ownedBubblesAtDeath": 0,
+        "speed": 1,
+        "capacity": 3,
+        "range": 1,
+        "vision": 2,
+        "pending": {
+          "speed": 0,
+          "capacity": 0,
+          "range": 0,
+          "vision": 0
+        }
+      },
+      {
+        "playerId": 4,
+        "position": {
+          "x": 20,
+          "y": 18
+        },
+        "point": {
+          "x": 20,
+          "y": 18
+        },
+        "deathTick": null,
+        "ownedBubblesAtDeath": 0,
+        "speed": 1,
+        "capacity": 3,
+        "range": 1,
+        "vision": 2,
+        "pending": {
+          "speed": 0,
+          "capacity": 0,
+          "range": 0,
+          "vision": 0
+        }
+      }
+    ],
+    "bubbles": [
+      {
+        "ownerId": 4,
+        "position": {
+          "x": 11,
+          "y": 11
+        },
+        "dueAt": 0,
+        "placedAt": -10,
+        "id": 1,
+        "initial": true,
+        "explodedAt": 0,
+        "sourceBubbleId": null
+      },
+      {
+        "ownerId": 4,
+        "position": {
+          "x": 14,
+          "y": 12
+        },
+        "dueAt": 0,
+        "placedAt": -10,
+        "id": 2,
+        "initial": true,
+        "explodedAt": 0,
+        "sourceBubbleId": null
+      }
+    ],
+    "destroyedCrates": [
+      {
+        "x": 11,
+        "y": 10
+      },
+      {
+        "x": 14,
+        "y": 11
+      }
+    ],
+    "deadPlacementSkips": 0,
+    "ignoredDeadActions": 0,
+    "items": [
+      {
+        "position": {
+          "x": 11,
+          "y": 10
+        },
+        "type": "vision",
+        "status": "picked"
+      },
+      {
+        "position": {
+          "x": 14,
+          "y": 11
+        },
+        "type": "capacity",
+        "status": "exposed"
+      },
+      {
+        "position": {
+          "x": 13,
+          "y": 8
+        },
+        "type": "range",
+        "status": "hidden"
+      },
+      {
+        "position": {
+          "x": 16,
+          "y": 10
+        },
+        "type": "vision",
+        "status": "hidden"
+      }
+    ],
+    "checkpoints": [],
+    "events": [
+      {
+        "kind": "itemPicked",
+        "count": 1,
+        "time": 1
+      },
+      {
+        "kind": "attributeActivated",
+        "count": 1,
+        "time": 1,
+        "itemType": "vision",
+        "value": 3,
+        "roundId": 2
+      }
+    ],
+    "observations": [
+      {
+        "roundId": 1,
+        "playerId": 1,
+        "vision": 2,
+        "cellCount": 25,
+        "items": [],
+        "players": [],
+        "absentCells": [
+          {
+            "x": 13,
+            "y": 10
+          }
+        ],
+        "cells": [
+          {
+            "position": {
+              "x": 11,
+              "y": 10
+            },
+            "terrain": "crate"
+          }
+        ]
+      },
+      {
+        "roundId": 2,
+        "playerId": 1,
+        "vision": 3,
+        "cellCount": 49,
+        "items": [
+          {
+            "position": {
+              "x": 14,
+              "y": 11
+            },
+            "type": "capacity"
+          }
+        ],
+        "players": [
+          {
+            "playerId": 2,
+            "position": {
+              "x": 14,
+              "y": 10
+            }
+          }
+        ],
+        "bubbles": [],
+        "cells": [
+          {
+            "position": {
+              "x": 13,
+              "y": 8
+            },
+            "terrain": "crate"
+          }
+        ],
+        "absentCells": [
+          {
+            "x": 15,
+            "y": 10
+          }
+        ]
+      }
+    ]
+  }
+}

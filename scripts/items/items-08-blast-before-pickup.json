@@ -1,0 +1,358 @@
+{
+  "name": "同刻爆炸先于拾取，死亡与终局取消后续拾取",
+  "notes": [
+    "输入及预期在首次游戏运行前按规则、精确分数计算编写；随机分配独立使用标准 Random(42) 种子流计算。",
+    "同一核心驱动正式地图和独立环境；脚本完成不等于竞技终局。"
+  ],
+  "totalTicks": 1,
+  "items": {
+    "mode": "fixed",
+    "placements": [
+      {
+        "position": {
+          "x": 1,
+          "y": 0
+        },
+        "type": "speed"
+      },
+      {
+        "position": {
+          "x": 19,
+          "y": 18
+        },
+        "type": "vision"
+      }
+    ]
+  },
+  "initial": {
+    "map": "empty",
+    "players": [
+      {
+        "playerId": 1,
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "speed": 1,
+        "capacity": 3,
+        "range": 1,
+        "vision": 2,
+        "lifetime": 10
+      },
+      {
+        "playerId": 2,
+        "position": {
+          "x": 10,
+          "y": 10
+        },
+        "speed": 1,
+        "capacity": 3,
+        "range": 1,
+        "vision": 2,
+        "lifetime": 10
+      },
+      {
+        "playerId": 3,
+        "position": {
+          "x": 12,
+          "y": 10
+        },
+        "speed": 1,
+        "capacity": 3,
+        "range": 1,
+        "vision": 2,
+        "lifetime": 10
+      },
+      {
+        "playerId": 4,
+        "position": {
+          "x": 20,
+          "y": 18
+        },
+        "speed": 1,
+        "capacity": 8,
+        "range": 1,
+        "vision": 2,
+        "lifetime": 10
+      }
+    ],
+    "crates": [
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": 19,
+        "y": 18
+      }
+    ],
+    "walls": [],
+    "bubbles": [
+      {
+        "ownerId": 4,
+        "position": {
+          "x": 1,
+          "y": 1
+        },
+        "dueAt": 0,
+        "placedAt": -10
+      },
+      {
+        "ownerId": 4,
+        "position": {
+          "x": 2,
+          "y": 0
+        },
+        "dueAt": 1,
+        "placedAt": -9
+      },
+      {
+        "ownerId": 4,
+        "position": {
+          "x": 11,
+          "y": 10
+        },
+        "dueAt": 1,
+        "placedAt": -9
+      },
+      {
+        "ownerId": 4,
+        "position": {
+          "x": 19,
+          "y": 17
+        },
+        "dueAt": 0,
+        "placedAt": -10
+      }
+    ]
+  },
+  "rounds": [
+    {
+      "roundId": 1,
+      "actions": [
+        {
+          "playerId": 1,
+          "direction": "right",
+          "placements": []
+        },
+        {
+          "playerId": 2,
+          "direction": "wait",
+          "placements": []
+        },
+        {
+          "playerId": 3,
+          "direction": "wait",
+          "placements": []
+        },
+        {
+          "playerId": 4,
+          "direction": "left",
+          "placements": []
+        }
+      ]
+    }
+  ],
+  "expected": {
+    "players": [
+      {
+        "playerId": 1,
+        "position": {
+          "x": 1,
+          "y": 0
+        },
+        "point": {
+          "x": 1,
+          "y": 0
+        },
+        "deathTick": 1,
+        "ownedBubblesAtDeath": 0,
+        "speed": 1,
+        "capacity": 3,
+        "range": 1,
+        "vision": 2,
+        "pending": {
+          "speed": 0,
+          "capacity": 0,
+          "range": 0,
+          "vision": 0
+        }
+      },
+      {
+        "playerId": 2,
+        "position": {
+          "x": 10,
+          "y": 10
+        },
+        "point": {
+          "x": 10,
+          "y": 10
+        },
+        "deathTick": 1,
+        "ownedBubblesAtDeath": 0,
+        "speed": 1,
+        "capacity": 3,
+        "range": 1,
+        "vision": 2,
+        "pending": {
+          "speed": 0,
+          "capacity": 0,
+          "range": 0,
+          "vision": 0
+        }
+      },
+      {
+        "playerId": 3,
+        "position": {
+          "x": 12,
+          "y": 10
+        },
+        "point": {
+          "x": 12,
+          "y": 10
+        },
+        "deathTick": 1,
+        "ownedBubblesAtDeath": 0,
+        "speed": 1,
+        "capacity": 3,
+        "range": 1,
+        "vision": 2,
+        "pending": {
+          "speed": 0,
+          "capacity": 0,
+          "range": 0,
+          "vision": 0
+        }
+      },
+      {
+        "playerId": 4,
+        "position": {
+          "x": 19,
+          "y": 18
+        },
+        "point": {
+          "x": 19,
+          "y": 18
+        },
+        "deathTick": null,
+        "ownedBubblesAtDeath": 0,
+        "speed": 1,
+        "capacity": 8,
+        "range": 1,
+        "vision": 2,
+        "pending": {
+          "speed": 0,
+          "capacity": 0,
+          "range": 0,
+          "vision": 0
+        }
+      }
+    ],
+    "bubbles": [
+      {
+        "ownerId": 4,
+        "position": {
+          "x": 1,
+          "y": 1
+        },
+        "dueAt": 0,
+        "placedAt": -10,
+        "id": 1,
+        "initial": true,
+        "explodedAt": 0,
+        "sourceBubbleId": null
+      },
+      {
+        "ownerId": 4,
+        "position": {
+          "x": 2,
+          "y": 0
+        },
+        "dueAt": 1,
+        "placedAt": -9,
+        "id": 2,
+        "initial": true,
+        "explodedAt": 1,
+        "sourceBubbleId": null
+      },
+      {
+        "ownerId": 4,
+        "position": {
+          "x": 11,
+          "y": 10
+        },
+        "dueAt": 1,
+        "placedAt": -9,
+        "id": 3,
+        "initial": true,
+        "explodedAt": 1,
+        "sourceBubbleId": null
+      },
+      {
+        "ownerId": 4,
+        "position": {
+          "x": 19,
+          "y": 17
+        },
+        "dueAt": 0,
+        "placedAt": -10,
+        "id": 4,
+        "initial": true,
+        "explodedAt": 0,
+        "sourceBubbleId": null
+      }
+    ],
+    "destroyedCrates": [
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": 19,
+        "y": 18
+      }
+    ],
+    "deadPlacementSkips": 0,
+    "ignoredDeadActions": 0,
+    "items": [
+      {
+        "position": {
+          "x": 1,
+          "y": 0
+        },
+        "type": "speed",
+        "status": "destroyed"
+      },
+      {
+        "position": {
+          "x": 19,
+          "y": 18
+        },
+        "type": "vision",
+        "status": "exposed"
+      }
+    ],
+    "checkpoints": [],
+    "events": [
+      {
+        "kind": "itemPicked",
+        "count": 0
+      },
+      {
+        "kind": "itemDestroyed",
+        "count": 1,
+        "time": 1
+      },
+      {
+        "kind": "matchEnded",
+        "count": 1,
+        "time": 1
+      }
+    ],
+    "observations": [],
+    "end": {
+      "tick": 1,
+      "winnerId": 4
+    }
+  }
+}

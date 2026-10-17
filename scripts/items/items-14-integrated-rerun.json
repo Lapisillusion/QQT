@@ -1,0 +1,502 @@
+{
+  "name": "四类道具完整对局、精确事件播放、终局与重跑",
+  "notes": [
+    "输入及预期在首次游戏运行前按规则、精确分数计算编写；随机分配独立使用标准 Random(42) 种子流计算。",
+    "同一核心驱动正式地图和独立环境；脚本完成不等于竞技终局。"
+  ],
+  "totalTicks": 2,
+  "items": {
+    "mode": "fixed",
+    "placements": [
+      {
+        "position": {
+          "x": 1,
+          "y": 0
+        },
+        "type": "speed"
+      },
+      {
+        "position": {
+          "x": 2,
+          "y": 0
+        },
+        "type": "capacity"
+      },
+      {
+        "position": {
+          "x": 3,
+          "y": 0
+        },
+        "type": "range"
+      },
+      {
+        "position": {
+          "x": 4,
+          "y": 0
+        },
+        "type": "vision"
+      }
+    ]
+  },
+  "initial": {
+    "map": "empty",
+    "players": [
+      {
+        "playerId": 1,
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "speed": 4,
+        "capacity": 3,
+        "range": 1,
+        "vision": 2,
+        "lifetime": 10
+      },
+      {
+        "playerId": 2,
+        "position": {
+          "x": 10,
+          "y": 10
+        },
+        "speed": 1,
+        "capacity": 3,
+        "range": 1,
+        "vision": 2,
+        "lifetime": 10
+      },
+      {
+        "playerId": 3,
+        "position": {
+          "x": 12,
+          "y": 10
+        },
+        "speed": 1,
+        "capacity": 3,
+        "range": 1,
+        "vision": 2,
+        "lifetime": 10
+      },
+      {
+        "playerId": 4,
+        "position": {
+          "x": 20,
+          "y": 18
+        },
+        "speed": 1,
+        "capacity": 8,
+        "range": 1,
+        "vision": 2,
+        "lifetime": 10
+      }
+    ],
+    "crates": [
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": 2,
+        "y": 0
+      },
+      {
+        "x": 3,
+        "y": 0
+      },
+      {
+        "x": 4,
+        "y": 0
+      }
+    ],
+    "walls": [],
+    "bubbles": [
+      {
+        "ownerId": 4,
+        "position": {
+          "x": 1,
+          "y": 1
+        },
+        "dueAt": 0,
+        "placedAt": -10
+      },
+      {
+        "ownerId": 4,
+        "position": {
+          "x": 2,
+          "y": 1
+        },
+        "dueAt": 0,
+        "placedAt": -10
+      },
+      {
+        "ownerId": 4,
+        "position": {
+          "x": 3,
+          "y": 1
+        },
+        "dueAt": 0,
+        "placedAt": -10
+      },
+      {
+        "ownerId": 4,
+        "position": {
+          "x": 4,
+          "y": 1
+        },
+        "dueAt": 0,
+        "placedAt": -10
+      },
+      {
+        "ownerId": 4,
+        "position": {
+          "x": 4,
+          "y": 6
+        },
+        "dueAt": 2,
+        "placedAt": -8
+      },
+      {
+        "ownerId": 4,
+        "position": {
+          "x": 11,
+          "y": 10
+        },
+        "dueAt": 2,
+        "placedAt": -8
+      }
+    ]
+  },
+  "rounds": [
+    {
+      "roundId": 1,
+      "actions": [
+        {
+          "playerId": 1,
+          "direction": "right",
+          "placements": [
+            {
+              "x": 4,
+              "y": 0
+            }
+          ]
+        },
+        {
+          "playerId": 2,
+          "direction": "wait",
+          "placements": []
+        },
+        {
+          "playerId": 3,
+          "direction": "wait",
+          "placements": []
+        },
+        {
+          "playerId": 4,
+          "direction": "wait",
+          "placements": []
+        }
+      ]
+    },
+    {
+      "roundId": 2,
+      "actions": [
+        {
+          "playerId": 1,
+          "direction": "down",
+          "placements": [
+            {
+              "x": 4,
+              "y": 5
+            }
+          ]
+        },
+        {
+          "playerId": 2,
+          "direction": "wait",
+          "placements": []
+        },
+        {
+          "playerId": 3,
+          "direction": "wait",
+          "placements": []
+        },
+        {
+          "playerId": 4,
+          "direction": "wait",
+          "placements": []
+        }
+      ]
+    }
+  ],
+  "expected": {
+    "players": [
+      {
+        "playerId": 1,
+        "position": {
+          "x": 4,
+          "y": 5
+        },
+        "point": {
+          "x": 4,
+          "y": 5
+        },
+        "deathTick": 2,
+        "ownedBubblesAtDeath": 1,
+        "speed": 5,
+        "capacity": 4,
+        "range": 2,
+        "vision": 3,
+        "pending": {
+          "speed": 0,
+          "capacity": 0,
+          "range": 0,
+          "vision": 0
+        }
+      },
+      {
+        "playerId": 2,
+        "position": {
+          "x": 10,
+          "y": 10
+        },
+        "point": {
+          "x": 10,
+          "y": 10
+        },
+        "deathTick": 2,
+        "ownedBubblesAtDeath": 0,
+        "speed": 1,
+        "capacity": 3,
+        "range": 1,
+        "vision": 2,
+        "pending": {
+          "speed": 0,
+          "capacity": 0,
+          "range": 0,
+          "vision": 0
+        }
+      },
+      {
+        "playerId": 3,
+        "position": {
+          "x": 12,
+          "y": 10
+        },
+        "point": {
+          "x": 12,
+          "y": 10
+        },
+        "deathTick": 2,
+        "ownedBubblesAtDeath": 0,
+        "speed": 1,
+        "capacity": 3,
+        "range": 1,
+        "vision": 2,
+        "pending": {
+          "speed": 0,
+          "capacity": 0,
+          "range": 0,
+          "vision": 0
+        }
+      },
+      {
+        "playerId": 4,
+        "position": {
+          "x": 20,
+          "y": 18
+        },
+        "point": {
+          "x": 20,
+          "y": 18
+        },
+        "deathTick": null,
+        "ownedBubblesAtDeath": 0,
+        "speed": 1,
+        "capacity": 8,
+        "range": 1,
+        "vision": 2,
+        "pending": {
+          "speed": 0,
+          "capacity": 0,
+          "range": 0,
+          "vision": 0
+        }
+      }
+    ],
+    "bubbles": [
+      {
+        "ownerId": 4,
+        "position": {
+          "x": 1,
+          "y": 1
+        },
+        "dueAt": 0,
+        "placedAt": -10,
+        "id": 1,
+        "initial": true,
+        "explodedAt": 0,
+        "sourceBubbleId": null
+      },
+      {
+        "ownerId": 4,
+        "position": {
+          "x": 2,
+          "y": 1
+        },
+        "dueAt": 0,
+        "placedAt": -10,
+        "id": 2,
+        "initial": true,
+        "explodedAt": 0,
+        "sourceBubbleId": null
+      },
+      {
+        "ownerId": 4,
+        "position": {
+          "x": 3,
+          "y": 1
+        },
+        "dueAt": 0,
+        "placedAt": -10,
+        "id": 3,
+        "initial": true,
+        "explodedAt": 0,
+        "sourceBubbleId": null
+      },
+      {
+        "ownerId": 4,
+        "position": {
+          "x": 4,
+          "y": 1
+        },
+        "dueAt": 0,
+        "placedAt": -10,
+        "id": 4,
+        "initial": true,
+        "explodedAt": 0,
+        "sourceBubbleId": null
+      },
+      {
+        "ownerId": 4,
+        "position": {
+          "x": 4,
+          "y": 6
+        },
+        "dueAt": 2,
+        "placedAt": -8,
+        "id": 5,
+        "initial": true,
+        "explodedAt": 2,
+        "sourceBubbleId": null
+      },
+      {
+        "ownerId": 4,
+        "position": {
+          "x": 11,
+          "y": 10
+        },
+        "dueAt": 2,
+        "placedAt": -8,
+        "id": 6,
+        "initial": true,
+        "explodedAt": 2,
+        "sourceBubbleId": null
+      },
+      {
+        "id": 7,
+        "explodedAt": null,
+        "sourceBubbleId": null,
+        "ownerId": 1,
+        "position": {
+          "x": 4,
+          "y": 0
+        },
+        "placedAt": 1,
+        "dueAt": 11
+      }
+    ],
+    "destroyedCrates": [
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": 2,
+        "y": 0
+      },
+      {
+        "x": 3,
+        "y": 0
+      },
+      {
+        "x": 4,
+        "y": 0
+      }
+    ],
+    "deadPlacementSkips": 0,
+    "ignoredDeadActions": 0,
+    "items": [
+      {
+        "position": {
+          "x": 1,
+          "y": 0
+        },
+        "type": "speed",
+        "status": "picked"
+      },
+      {
+        "position": {
+          "x": 2,
+          "y": 0
+        },
+        "type": "capacity",
+        "status": "picked"
+      },
+      {
+        "position": {
+          "x": 3,
+          "y": 0
+        },
+        "type": "range",
+        "status": "picked"
+      },
+      {
+        "position": {
+          "x": 4,
+          "y": 0
+        },
+        "type": "vision",
+        "status": "picked"
+      }
+    ],
+    "checkpoints": [],
+    "events": [
+      {
+        "kind": "itemPicked",
+        "count": 4
+      },
+      {
+        "kind": "attributeActivated",
+        "count": 4,
+        "time": 1,
+        "roundId": 2,
+        "phase": "roundStart"
+      },
+      {
+        "kind": "placed",
+        "count": 0,
+        "time": 2
+      },
+      {
+        "kind": "matchEnded",
+        "count": 1,
+        "time": 2
+      }
+    ],
+    "observations": [],
+    "end": {
+      "tick": 2,
+      "winnerId": 4
+    }
+  }
+}

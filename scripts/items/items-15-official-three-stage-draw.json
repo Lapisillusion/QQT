@@ -1,0 +1,3285 @@
+{
+  "name": "正式地图：四人依次获取移速、容量、火力，双泡泡两格站位全灭",
+  "notes": [
+    "不配置 initial，沿用正式21×21地图、四角出生、速度1、容量3、范围1、寿命3、视野R=2；无初始泡泡。",
+    "四人分别在出生角的镜像区域行动，按固定箱内道具配置依次获得三种增益；不假定四人共同破坏同一格箱子。",
+    "正式地图允许连带毁箱，预期列出全部被毁箱子，而不是只统计藏道具的12个箱子。",
+    "第13轮与20轮每位玩家均在起点、终点各放一颗；第21轮只移动一次退至离最近泡泡2格，随后等待。",
+    "t=22首批泡泡在范围2下连锁原定t=23的另一颗泡泡，后者恰好覆盖两格外玩家；四人同批淘汰判平局。",
+    "所有位置、分数时间和预期在首次实际运行前解析推导，不从程序输出回填。"
+  ],
+  "totalTicks": 22,
+  "items": {
+    "mode": "fixed",
+    "placements": [
+      {
+        "position": {
+          "x": 2,
+          "y": 0
+        },
+        "type": "speed"
+      },
+      {
+        "position": {
+          "x": 3,
+          "y": 0
+        },
+        "type": "capacity"
+      },
+      {
+        "position": {
+          "x": 4,
+          "y": 0
+        },
+        "type": "range"
+      },
+      {
+        "position": {
+          "x": 18,
+          "y": 0
+        },
+        "type": "speed"
+      },
+      {
+        "position": {
+          "x": 17,
+          "y": 0
+        },
+        "type": "capacity"
+      },
+      {
+        "position": {
+          "x": 16,
+          "y": 0
+        },
+        "type": "range"
+      },
+      {
+        "position": {
+          "x": 2,
+          "y": 20
+        },
+        "type": "speed"
+      },
+      {
+        "position": {
+          "x": 3,
+          "y": 20
+        },
+        "type": "capacity"
+      },
+      {
+        "position": {
+          "x": 4,
+          "y": 20
+        },
+        "type": "range"
+      },
+      {
+        "position": {
+          "x": 18,
+          "y": 20
+        },
+        "type": "speed"
+      },
+      {
+        "position": {
+          "x": 17,
+          "y": 20
+        },
+        "type": "capacity"
+      },
+      {
+        "position": {
+          "x": 16,
+          "y": 20
+        },
+        "type": "range"
+      }
+    ]
+  },
+  "rounds": [
+    {
+      "roundId": 1,
+      "actions": [
+        {
+          "playerId": 1,
+          "direction": "right",
+          "placements": [
+            {
+              "x": 1,
+              "y": 0
+            }
+          ]
+        },
+        {
+          "playerId": 2,
+          "direction": "left",
+          "placements": [
+            {
+              "x": 19,
+              "y": 0
+            }
+          ]
+        },
+        {
+          "playerId": 3,
+          "direction": "right",
+          "placements": [
+            {
+              "x": 1,
+              "y": 20
+            }
+          ]
+        },
+        {
+          "playerId": 4,
+          "direction": "left",
+          "placements": [
+            {
+              "x": 19,
+              "y": 20
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "roundId": 2,
+      "actions": [
+        {
+          "playerId": 1,
+          "direction": "left",
+          "placements": []
+        },
+        {
+          "playerId": 2,
+          "direction": "right",
+          "placements": []
+        },
+        {
+          "playerId": 3,
+          "direction": "left",
+          "placements": []
+        },
+        {
+          "playerId": 4,
+          "direction": "right",
+          "placements": []
+        }
+      ]
+    },
+    {
+      "roundId": 3,
+      "actions": [
+        {
+          "playerId": 1,
+          "direction": "down",
+          "placements": []
+        },
+        {
+          "playerId": 2,
+          "direction": "down",
+          "placements": []
+        },
+        {
+          "playerId": 3,
+          "direction": "up",
+          "placements": []
+        },
+        {
+          "playerId": 4,
+          "direction": "up",
+          "placements": []
+        }
+      ]
+    },
+    {
+      "roundId": 4,
+      "actions": [
+        {
+          "playerId": 1,
+          "direction": "wait",
+          "placements": []
+        },
+        {
+          "playerId": 2,
+          "direction": "wait",
+          "placements": []
+        },
+        {
+          "playerId": 3,
+          "direction": "wait",
+          "placements": []
+        },
+        {
+          "playerId": 4,
+          "direction": "wait",
+          "placements": []
+        }
+      ]
+    },
+    {
+      "roundId": 5,
+      "actions": [
+        {
+          "playerId": 1,
+          "direction": "up",
+          "placements": []
+        },
+        {
+          "playerId": 2,
+          "direction": "up",
+          "placements": []
+        },
+        {
+          "playerId": 3,
+          "direction": "down",
+          "placements": []
+        },
+        {
+          "playerId": 4,
+          "direction": "down",
+          "placements": []
+        }
+      ]
+    },
+    {
+      "roundId": 6,
+      "actions": [
+        {
+          "playerId": 1,
+          "direction": "right",
+          "placements": []
+        },
+        {
+          "playerId": 2,
+          "direction": "left",
+          "placements": []
+        },
+        {
+          "playerId": 3,
+          "direction": "right",
+          "placements": []
+        },
+        {
+          "playerId": 4,
+          "direction": "left",
+          "placements": []
+        }
+      ]
+    },
+    {
+      "roundId": 7,
+      "actions": [
+        {
+          "playerId": 1,
+          "direction": "right",
+          "placements": []
+        },
+        {
+          "playerId": 2,
+          "direction": "left",
+          "placements": []
+        },
+        {
+          "playerId": 3,
+          "direction": "right",
+          "placements": []
+        },
+        {
+          "playerId": 4,
+          "direction": "left",
+          "placements": []
+        }
+      ]
+    },
+    {
+      "roundId": 8,
+      "actions": [
+        {
+          "playerId": 1,
+          "direction": "left",
+          "placements": [
+            {
+              "x": 2,
+              "y": 0
+            }
+          ]
+        },
+        {
+          "playerId": 2,
+          "direction": "right",
+          "placements": [
+            {
+              "x": 18,
+              "y": 0
+            }
+          ]
+        },
+        {
+          "playerId": 3,
+          "direction": "left",
+          "placements": [
+            {
+              "x": 2,
+              "y": 20
+            }
+          ]
+        },
+        {
+          "playerId": 4,
+          "direction": "right",
+          "placements": [
+            {
+              "x": 18,
+              "y": 20
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "roundId": 9,
+      "actions": [
+        {
+          "playerId": 1,
+          "direction": "wait",
+          "placements": []
+        },
+        {
+          "playerId": 2,
+          "direction": "wait",
+          "placements": []
+        },
+        {
+          "playerId": 3,
+          "direction": "wait",
+          "placements": []
+        },
+        {
+          "playerId": 4,
+          "direction": "wait",
+          "placements": []
+        }
+      ]
+    },
+    {
+      "roundId": 10,
+      "actions": [
+        {
+          "playerId": 1,
+          "direction": "wait",
+          "placements": []
+        },
+        {
+          "playerId": 2,
+          "direction": "wait",
+          "placements": []
+        },
+        {
+          "playerId": 3,
+          "direction": "wait",
+          "placements": []
+        },
+        {
+          "playerId": 4,
+          "direction": "wait",
+          "placements": []
+        }
+      ]
+    },
+    {
+      "roundId": 11,
+      "actions": [
+        {
+          "playerId": 1,
+          "direction": "right",
+          "placements": []
+        },
+        {
+          "playerId": 2,
+          "direction": "left",
+          "placements": []
+        },
+        {
+          "playerId": 3,
+          "direction": "right",
+          "placements": []
+        },
+        {
+          "playerId": 4,
+          "direction": "left",
+          "placements": []
+        }
+      ]
+    },
+    {
+      "roundId": 12,
+      "actions": [
+        {
+          "playerId": 1,
+          "direction": "right",
+          "placements": []
+        },
+        {
+          "playerId": 2,
+          "direction": "left",
+          "placements": []
+        },
+        {
+          "playerId": 3,
+          "direction": "right",
+          "placements": []
+        },
+        {
+          "playerId": 4,
+          "direction": "left",
+          "placements": []
+        }
+      ]
+    },
+    {
+      "roundId": 13,
+      "actions": [
+        {
+          "playerId": 1,
+          "direction": "left",
+          "placements": [
+            {
+              "x": 3,
+              "y": 0
+            },
+            {
+              "x": 1,
+              "y": 0
+            }
+          ]
+        },
+        {
+          "playerId": 2,
+          "direction": "right",
+          "placements": [
+            {
+              "x": 17,
+              "y": 0
+            },
+            {
+              "x": 19,
+              "y": 0
+            }
+          ]
+        },
+        {
+          "playerId": 3,
+          "direction": "left",
+          "placements": [
+            {
+              "x": 3,
+              "y": 20
+            },
+            {
+              "x": 1,
+              "y": 20
+            }
+          ]
+        },
+        {
+          "playerId": 4,
+          "direction": "right",
+          "placements": [
+            {
+              "x": 17,
+              "y": 20
+            },
+            {
+              "x": 19,
+              "y": 20
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "roundId": 14,
+      "actions": [
+        {
+          "playerId": 1,
+          "direction": "left",
+          "placements": []
+        },
+        {
+          "playerId": 2,
+          "direction": "right",
+          "placements": []
+        },
+        {
+          "playerId": 3,
+          "direction": "left",
+          "placements": []
+        },
+        {
+          "playerId": 4,
+          "direction": "right",
+          "placements": []
+        }
+      ]
+    },
+    {
+      "roundId": 15,
+      "actions": [
+        {
+          "playerId": 1,
+          "direction": "down",
+          "placements": []
+        },
+        {
+          "playerId": 2,
+          "direction": "down",
+          "placements": []
+        },
+        {
+          "playerId": 3,
+          "direction": "up",
+          "placements": []
+        },
+        {
+          "playerId": 4,
+          "direction": "up",
+          "placements": []
+        }
+      ]
+    },
+    {
+      "roundId": 16,
+      "actions": [
+        {
+          "playerId": 1,
+          "direction": "wait",
+          "placements": []
+        },
+        {
+          "playerId": 2,
+          "direction": "wait",
+          "placements": []
+        },
+        {
+          "playerId": 3,
+          "direction": "wait",
+          "placements": []
+        },
+        {
+          "playerId": 4,
+          "direction": "wait",
+          "placements": []
+        }
+      ]
+    },
+    {
+      "roundId": 17,
+      "actions": [
+        {
+          "playerId": 1,
+          "direction": "up",
+          "placements": []
+        },
+        {
+          "playerId": 2,
+          "direction": "up",
+          "placements": []
+        },
+        {
+          "playerId": 3,
+          "direction": "down",
+          "placements": []
+        },
+        {
+          "playerId": 4,
+          "direction": "down",
+          "placements": []
+        }
+      ]
+    },
+    {
+      "roundId": 18,
+      "actions": [
+        {
+          "playerId": 1,
+          "direction": "right",
+          "placements": []
+        },
+        {
+          "playerId": 2,
+          "direction": "left",
+          "placements": []
+        },
+        {
+          "playerId": 3,
+          "direction": "right",
+          "placements": []
+        },
+        {
+          "playerId": 4,
+          "direction": "left",
+          "placements": []
+        }
+      ]
+    },
+    {
+      "roundId": 19,
+      "actions": [
+        {
+          "playerId": 1,
+          "direction": "right",
+          "placements": []
+        },
+        {
+          "playerId": 2,
+          "direction": "left",
+          "placements": []
+        },
+        {
+          "playerId": 3,
+          "direction": "right",
+          "placements": []
+        },
+        {
+          "playerId": 4,
+          "direction": "left",
+          "placements": []
+        }
+      ]
+    },
+    {
+      "roundId": 20,
+      "actions": [
+        {
+          "playerId": 1,
+          "direction": "left",
+          "placements": [
+            {
+              "x": 4,
+              "y": 0
+            },
+            {
+              "x": 2,
+              "y": 0
+            }
+          ]
+        },
+        {
+          "playerId": 2,
+          "direction": "right",
+          "placements": [
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 18,
+              "y": 0
+            }
+          ]
+        },
+        {
+          "playerId": 3,
+          "direction": "left",
+          "placements": [
+            {
+              "x": 4,
+              "y": 20
+            },
+            {
+              "x": 2,
+              "y": 20
+            }
+          ]
+        },
+        {
+          "playerId": 4,
+          "direction": "right",
+          "placements": [
+            {
+              "x": 16,
+              "y": 20
+            },
+            {
+              "x": 18,
+              "y": 20
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "roundId": 21,
+      "actions": [
+        {
+          "playerId": 1,
+          "direction": "left",
+          "placements": []
+        },
+        {
+          "playerId": 2,
+          "direction": "right",
+          "placements": []
+        },
+        {
+          "playerId": 3,
+          "direction": "left",
+          "placements": []
+        },
+        {
+          "playerId": 4,
+          "direction": "right",
+          "placements": []
+        }
+      ]
+    },
+    {
+      "roundId": 22,
+      "actions": [
+        {
+          "playerId": 1,
+          "direction": "wait",
+          "placements": []
+        },
+        {
+          "playerId": 2,
+          "direction": "wait",
+          "placements": []
+        },
+        {
+          "playerId": 3,
+          "direction": "wait",
+          "placements": []
+        },
+        {
+          "playerId": 4,
+          "direction": "wait",
+          "placements": []
+        }
+      ]
+    }
+  ],
+  "expected": {
+    "players": [
+      {
+        "playerId": 1,
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "point": {
+          "x": 0,
+          "y": 0
+        },
+        "deathTick": 22,
+        "ownedBubblesAtDeath": 0,
+        "speed": 2,
+        "capacity": 4,
+        "range": 2,
+        "vision": 2,
+        "pending": {
+          "speed": 0,
+          "capacity": 0,
+          "range": 0,
+          "vision": 0
+        }
+      },
+      {
+        "playerId": 2,
+        "position": {
+          "x": 20,
+          "y": 0
+        },
+        "point": {
+          "x": 20,
+          "y": 0
+        },
+        "deathTick": 22,
+        "ownedBubblesAtDeath": 0,
+        "speed": 2,
+        "capacity": 4,
+        "range": 2,
+        "vision": 2,
+        "pending": {
+          "speed": 0,
+          "capacity": 0,
+          "range": 0,
+          "vision": 0
+        }
+      },
+      {
+        "playerId": 3,
+        "position": {
+          "x": 0,
+          "y": 20
+        },
+        "point": {
+          "x": 0,
+          "y": 20
+        },
+        "deathTick": 22,
+        "ownedBubblesAtDeath": 0,
+        "speed": 2,
+        "capacity": 4,
+        "range": 2,
+        "vision": 2,
+        "pending": {
+          "speed": 0,
+          "capacity": 0,
+          "range": 0,
+          "vision": 0
+        }
+      },
+      {
+        "playerId": 4,
+        "position": {
+          "x": 20,
+          "y": 20
+        },
+        "point": {
+          "x": 20,
+          "y": 20
+        },
+        "deathTick": 22,
+        "ownedBubblesAtDeath": 0,
+        "speed": 2,
+        "capacity": 4,
+        "range": 2,
+        "vision": 2,
+        "pending": {
+          "speed": 0,
+          "capacity": 0,
+          "range": 0,
+          "vision": 0
+        }
+      }
+    ],
+    "bubbles": [
+      {
+        "id": 1,
+        "ownerId": 1,
+        "position": {
+          "x": 1,
+          "y": 0
+        },
+        "placedAt": 1,
+        "dueAt": 4,
+        "explodedAt": 4,
+        "sourceBubbleId": null
+      },
+      {
+        "id": 2,
+        "ownerId": 2,
+        "position": {
+          "x": 19,
+          "y": 0
+        },
+        "placedAt": 1,
+        "dueAt": 4,
+        "explodedAt": 4,
+        "sourceBubbleId": null
+      },
+      {
+        "id": 3,
+        "ownerId": 3,
+        "position": {
+          "x": 1,
+          "y": 20
+        },
+        "placedAt": 1,
+        "dueAt": 4,
+        "explodedAt": 4,
+        "sourceBubbleId": null
+      },
+      {
+        "id": 4,
+        "ownerId": 4,
+        "position": {
+          "x": 19,
+          "y": 20
+        },
+        "placedAt": 1,
+        "dueAt": 4,
+        "explodedAt": 4,
+        "sourceBubbleId": null
+      },
+      {
+        "id": 5,
+        "ownerId": 1,
+        "position": {
+          "x": 2,
+          "y": 0
+        },
+        "placedAt": 7,
+        "dueAt": 10,
+        "explodedAt": 10,
+        "sourceBubbleId": null
+      },
+      {
+        "id": 6,
+        "ownerId": 2,
+        "position": {
+          "x": 18,
+          "y": 0
+        },
+        "placedAt": 7,
+        "dueAt": 10,
+        "explodedAt": 10,
+        "sourceBubbleId": null
+      },
+      {
+        "id": 7,
+        "ownerId": 3,
+        "position": {
+          "x": 2,
+          "y": 20
+        },
+        "placedAt": 7,
+        "dueAt": 10,
+        "explodedAt": 10,
+        "sourceBubbleId": null
+      },
+      {
+        "id": 8,
+        "ownerId": 4,
+        "position": {
+          "x": 18,
+          "y": 20
+        },
+        "placedAt": 7,
+        "dueAt": 10,
+        "explodedAt": 10,
+        "sourceBubbleId": null
+      },
+      {
+        "id": 9,
+        "ownerId": 1,
+        "position": {
+          "x": 3,
+          "y": 0
+        },
+        "placedAt": 12,
+        "dueAt": 15,
+        "explodedAt": 15,
+        "sourceBubbleId": null
+      },
+      {
+        "id": 10,
+        "ownerId": 2,
+        "position": {
+          "x": 17,
+          "y": 0
+        },
+        "placedAt": 12,
+        "dueAt": 15,
+        "explodedAt": 15,
+        "sourceBubbleId": null
+      },
+      {
+        "id": 11,
+        "ownerId": 3,
+        "position": {
+          "x": 3,
+          "y": 20
+        },
+        "placedAt": 12,
+        "dueAt": 15,
+        "explodedAt": 15,
+        "sourceBubbleId": null
+      },
+      {
+        "id": 12,
+        "ownerId": 4,
+        "position": {
+          "x": 17,
+          "y": 20
+        },
+        "placedAt": 12,
+        "dueAt": 15,
+        "explodedAt": 15,
+        "sourceBubbleId": null
+      },
+      {
+        "id": 13,
+        "ownerId": 1,
+        "position": {
+          "x": 1,
+          "y": 0
+        },
+        "placedAt": 13,
+        "dueAt": 16,
+        "explodedAt": 16,
+        "sourceBubbleId": null
+      },
+      {
+        "id": 14,
+        "ownerId": 2,
+        "position": {
+          "x": 19,
+          "y": 0
+        },
+        "placedAt": 13,
+        "dueAt": 16,
+        "explodedAt": 16,
+        "sourceBubbleId": null
+      },
+      {
+        "id": 15,
+        "ownerId": 3,
+        "position": {
+          "x": 1,
+          "y": 20
+        },
+        "placedAt": 13,
+        "dueAt": 16,
+        "explodedAt": 16,
+        "sourceBubbleId": null
+      },
+      {
+        "id": 16,
+        "ownerId": 4,
+        "position": {
+          "x": 19,
+          "y": 20
+        },
+        "placedAt": 13,
+        "dueAt": 16,
+        "explodedAt": 16,
+        "sourceBubbleId": null
+      },
+      {
+        "id": 17,
+        "ownerId": 1,
+        "position": {
+          "x": 4,
+          "y": 0
+        },
+        "placedAt": 19,
+        "dueAt": 22,
+        "explodedAt": 22,
+        "sourceBubbleId": null
+      },
+      {
+        "id": 18,
+        "ownerId": 2,
+        "position": {
+          "x": 16,
+          "y": 0
+        },
+        "placedAt": 19,
+        "dueAt": 22,
+        "explodedAt": 22,
+        "sourceBubbleId": null
+      },
+      {
+        "id": 19,
+        "ownerId": 3,
+        "position": {
+          "x": 4,
+          "y": 20
+        },
+        "placedAt": 19,
+        "dueAt": 22,
+        "explodedAt": 22,
+        "sourceBubbleId": null
+      },
+      {
+        "id": 20,
+        "ownerId": 4,
+        "position": {
+          "x": 16,
+          "y": 20
+        },
+        "placedAt": 19,
+        "dueAt": 22,
+        "explodedAt": 22,
+        "sourceBubbleId": null
+      },
+      {
+        "id": 21,
+        "ownerId": 1,
+        "position": {
+          "x": 2,
+          "y": 0
+        },
+        "placedAt": 20,
+        "dueAt": 23,
+        "explodedAt": 22,
+        "sourceBubbleId": 17
+      },
+      {
+        "id": 22,
+        "ownerId": 2,
+        "position": {
+          "x": 18,
+          "y": 0
+        },
+        "placedAt": 20,
+        "dueAt": 23,
+        "explodedAt": 22,
+        "sourceBubbleId": 18
+      },
+      {
+        "id": 23,
+        "ownerId": 3,
+        "position": {
+          "x": 2,
+          "y": 20
+        },
+        "placedAt": 20,
+        "dueAt": 23,
+        "explodedAt": 22,
+        "sourceBubbleId": 19
+      },
+      {
+        "id": 24,
+        "ownerId": 4,
+        "position": {
+          "x": 18,
+          "y": 20
+        },
+        "placedAt": 20,
+        "dueAt": 23,
+        "explodedAt": 22,
+        "sourceBubbleId": 20
+      }
+    ],
+    "destroyedCrates": [
+      {
+        "x": 2,
+        "y": 0
+      },
+      {
+        "x": 3,
+        "y": 0
+      },
+      {
+        "x": 2,
+        "y": 1
+      },
+      {
+        "x": 4,
+        "y": 0
+      },
+      {
+        "x": 5,
+        "y": 0
+      },
+      {
+        "x": 4,
+        "y": 1
+      },
+      {
+        "x": 2,
+        "y": 2
+      },
+      {
+        "x": 18,
+        "y": 0
+      },
+      {
+        "x": 17,
+        "y": 0
+      },
+      {
+        "x": 18,
+        "y": 1
+      },
+      {
+        "x": 16,
+        "y": 0
+      },
+      {
+        "x": 15,
+        "y": 0
+      },
+      {
+        "x": 16,
+        "y": 1
+      },
+      {
+        "x": 18,
+        "y": 2
+      },
+      {
+        "x": 2,
+        "y": 20
+      },
+      {
+        "x": 3,
+        "y": 20
+      },
+      {
+        "x": 2,
+        "y": 19
+      },
+      {
+        "x": 4,
+        "y": 20
+      },
+      {
+        "x": 5,
+        "y": 20
+      },
+      {
+        "x": 4,
+        "y": 19
+      },
+      {
+        "x": 2,
+        "y": 18
+      },
+      {
+        "x": 18,
+        "y": 20
+      },
+      {
+        "x": 17,
+        "y": 20
+      },
+      {
+        "x": 18,
+        "y": 19
+      },
+      {
+        "x": 16,
+        "y": 20
+      },
+      {
+        "x": 15,
+        "y": 20
+      },
+      {
+        "x": 16,
+        "y": 19
+      },
+      {
+        "x": 18,
+        "y": 18
+      }
+    ],
+    "deadPlacementSkips": 0,
+    "ignoredDeadActions": 0,
+    "items": [
+      {
+        "position": {
+          "x": 2,
+          "y": 0
+        },
+        "type": "speed",
+        "status": "picked"
+      },
+      {
+        "position": {
+          "x": 3,
+          "y": 0
+        },
+        "type": "capacity",
+        "status": "picked"
+      },
+      {
+        "position": {
+          "x": 4,
+          "y": 0
+        },
+        "type": "range",
+        "status": "picked"
+      },
+      {
+        "position": {
+          "x": 18,
+          "y": 0
+        },
+        "type": "speed",
+        "status": "picked"
+      },
+      {
+        "position": {
+          "x": 17,
+          "y": 0
+        },
+        "type": "capacity",
+        "status": "picked"
+      },
+      {
+        "position": {
+          "x": 16,
+          "y": 0
+        },
+        "type": "range",
+        "status": "picked"
+      },
+      {
+        "position": {
+          "x": 2,
+          "y": 20
+        },
+        "type": "speed",
+        "status": "picked"
+      },
+      {
+        "position": {
+          "x": 3,
+          "y": 20
+        },
+        "type": "capacity",
+        "status": "picked"
+      },
+      {
+        "position": {
+          "x": 4,
+          "y": 20
+        },
+        "type": "range",
+        "status": "picked"
+      },
+      {
+        "position": {
+          "x": 18,
+          "y": 20
+        },
+        "type": "speed",
+        "status": "picked"
+      },
+      {
+        "position": {
+          "x": 17,
+          "y": 20
+        },
+        "type": "capacity",
+        "status": "picked"
+      },
+      {
+        "position": {
+          "x": 16,
+          "y": 20
+        },
+        "type": "range",
+        "status": "picked"
+      }
+    ],
+    "itemCounts": {
+      "speed": 4,
+      "capacity": 4,
+      "range": 4,
+      "vision": 0
+    },
+    "checkpoints": [
+      {
+        "time": 4,
+        "roundId": 4,
+        "players": [
+          {
+            "playerId": 1,
+            "position": {
+              "x": 0,
+              "y": 1
+            },
+            "point": {
+              "x": 0,
+              "y": 1
+            },
+            "alive": true,
+            "speed": 1,
+            "capacity": 3,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 2,
+            "position": {
+              "x": 20,
+              "y": 1
+            },
+            "point": {
+              "x": 20,
+              "y": 1
+            },
+            "alive": true,
+            "speed": 1,
+            "capacity": 3,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 3,
+            "position": {
+              "x": 0,
+              "y": 19
+            },
+            "point": {
+              "x": 0,
+              "y": 19
+            },
+            "alive": true,
+            "speed": 1,
+            "capacity": 3,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 4,
+            "position": {
+              "x": 20,
+              "y": 19
+            },
+            "point": {
+              "x": 20,
+              "y": 19
+            },
+            "alive": true,
+            "speed": 1,
+            "capacity": 3,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          }
+        ]
+      },
+      {
+        "time": 7,
+        "roundId": 7,
+        "players": [
+          {
+            "playerId": 1,
+            "position": {
+              "x": 2,
+              "y": 0
+            },
+            "point": {
+              "x": 2,
+              "y": 0
+            },
+            "alive": true,
+            "speed": 1,
+            "capacity": 3,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 1,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 2,
+            "position": {
+              "x": 18,
+              "y": 0
+            },
+            "point": {
+              "x": 18,
+              "y": 0
+            },
+            "alive": true,
+            "speed": 1,
+            "capacity": 3,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 1,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 3,
+            "position": {
+              "x": 2,
+              "y": 20
+            },
+            "point": {
+              "x": 2,
+              "y": 20
+            },
+            "alive": true,
+            "speed": 1,
+            "capacity": 3,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 1,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 4,
+            "position": {
+              "x": 18,
+              "y": 20
+            },
+            "point": {
+              "x": 18,
+              "y": 20
+            },
+            "alive": true,
+            "speed": 1,
+            "capacity": 3,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 1,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          }
+        ]
+      },
+      {
+        "time": 7,
+        "roundId": 8,
+        "players": [
+          {
+            "playerId": 1,
+            "position": {
+              "x": 2,
+              "y": 0
+            },
+            "point": {
+              "x": 2,
+              "y": 0
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 3,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 2,
+            "position": {
+              "x": 18,
+              "y": 0
+            },
+            "point": {
+              "x": 18,
+              "y": 0
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 3,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 3,
+            "position": {
+              "x": 2,
+              "y": 20
+            },
+            "point": {
+              "x": 2,
+              "y": 20
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 3,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 4,
+            "position": {
+              "x": 18,
+              "y": 20
+            },
+            "point": {
+              "x": 18,
+              "y": 20
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 3,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          }
+        ]
+      },
+      {
+        "time": 8,
+        "roundId": 8,
+        "players": [
+          {
+            "playerId": 1,
+            "position": {
+              "x": 0,
+              "y": 0
+            },
+            "point": {
+              "x": 0,
+              "y": 0
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 3,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 2,
+            "position": {
+              "x": 20,
+              "y": 0
+            },
+            "point": {
+              "x": 20,
+              "y": 0
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 3,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 3,
+            "position": {
+              "x": 0,
+              "y": 20
+            },
+            "point": {
+              "x": 0,
+              "y": 20
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 3,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 4,
+            "position": {
+              "x": 20,
+              "y": 20
+            },
+            "point": {
+              "x": 20,
+              "y": 20
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 3,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          }
+        ]
+      },
+      {
+        "time": {
+          "numerator": 23,
+          "denominator": 2
+        },
+        "roundId": 12,
+        "players": [
+          {
+            "playerId": 1,
+            "position": {
+              "x": 3,
+              "y": 0
+            },
+            "point": {
+              "x": 3,
+              "y": 0
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 3,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 1,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 2,
+            "position": {
+              "x": 17,
+              "y": 0
+            },
+            "point": {
+              "x": 17,
+              "y": 0
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 3,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 1,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 3,
+            "position": {
+              "x": 3,
+              "y": 20
+            },
+            "point": {
+              "x": 3,
+              "y": 20
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 3,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 1,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 4,
+            "position": {
+              "x": 17,
+              "y": 20
+            },
+            "point": {
+              "x": 17,
+              "y": 20
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 3,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 1,
+              "range": 0,
+              "vision": 0
+            }
+          }
+        ]
+      },
+      {
+        "time": 12,
+        "roundId": 12,
+        "players": [
+          {
+            "playerId": 1,
+            "position": {
+              "x": 3,
+              "y": 0
+            },
+            "point": {
+              "x": 3,
+              "y": 0
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 3,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 1,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 2,
+            "position": {
+              "x": 17,
+              "y": 0
+            },
+            "point": {
+              "x": 17,
+              "y": 0
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 3,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 1,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 3,
+            "position": {
+              "x": 3,
+              "y": 20
+            },
+            "point": {
+              "x": 3,
+              "y": 20
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 3,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 1,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 4,
+            "position": {
+              "x": 17,
+              "y": 20
+            },
+            "point": {
+              "x": 17,
+              "y": 20
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 3,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 1,
+              "range": 0,
+              "vision": 0
+            }
+          }
+        ]
+      },
+      {
+        "time": 12,
+        "roundId": 13,
+        "players": [
+          {
+            "playerId": 1,
+            "position": {
+              "x": 3,
+              "y": 0
+            },
+            "point": {
+              "x": 3,
+              "y": 0
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 4,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 2,
+            "position": {
+              "x": 17,
+              "y": 0
+            },
+            "point": {
+              "x": 17,
+              "y": 0
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 4,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 3,
+            "position": {
+              "x": 3,
+              "y": 20
+            },
+            "point": {
+              "x": 3,
+              "y": 20
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 4,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 4,
+            "position": {
+              "x": 17,
+              "y": 20
+            },
+            "point": {
+              "x": 17,
+              "y": 20
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 4,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          }
+        ]
+      },
+      {
+        "time": 13,
+        "roundId": 13,
+        "players": [
+          {
+            "playerId": 1,
+            "position": {
+              "x": 1,
+              "y": 0
+            },
+            "point": {
+              "x": 1,
+              "y": 0
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 4,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 2,
+            "position": {
+              "x": 19,
+              "y": 0
+            },
+            "point": {
+              "x": 19,
+              "y": 0
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 4,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 3,
+            "position": {
+              "x": 1,
+              "y": 20
+            },
+            "point": {
+              "x": 1,
+              "y": 20
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 4,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 4,
+            "position": {
+              "x": 19,
+              "y": 20
+            },
+            "point": {
+              "x": 19,
+              "y": 20
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 4,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          }
+        ]
+      },
+      {
+        "time": 15,
+        "roundId": 15,
+        "players": [
+          {
+            "playerId": 1,
+            "position": {
+              "x": 0,
+              "y": 1
+            },
+            "point": {
+              "x": 0,
+              "y": 1
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 4,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 2,
+            "position": {
+              "x": 20,
+              "y": 1
+            },
+            "point": {
+              "x": 20,
+              "y": 1
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 4,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 3,
+            "position": {
+              "x": 0,
+              "y": 19
+            },
+            "point": {
+              "x": 0,
+              "y": 19
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 4,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 4,
+            "position": {
+              "x": 20,
+              "y": 19
+            },
+            "point": {
+              "x": 20,
+              "y": 19
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 4,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          }
+        ]
+      },
+      {
+        "time": 16,
+        "roundId": 16,
+        "players": [
+          {
+            "playerId": 1,
+            "position": {
+              "x": 0,
+              "y": 1
+            },
+            "point": {
+              "x": 0,
+              "y": 1
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 4,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 2,
+            "position": {
+              "x": 20,
+              "y": 1
+            },
+            "point": {
+              "x": 20,
+              "y": 1
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 4,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 3,
+            "position": {
+              "x": 0,
+              "y": 19
+            },
+            "point": {
+              "x": 0,
+              "y": 19
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 4,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 4,
+            "position": {
+              "x": 20,
+              "y": 19
+            },
+            "point": {
+              "x": 20,
+              "y": 19
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 4,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          }
+        ]
+      },
+      {
+        "time": 19,
+        "roundId": 19,
+        "players": [
+          {
+            "playerId": 1,
+            "position": {
+              "x": 4,
+              "y": 0
+            },
+            "point": {
+              "x": 4,
+              "y": 0
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 4,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 1,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 2,
+            "position": {
+              "x": 16,
+              "y": 0
+            },
+            "point": {
+              "x": 16,
+              "y": 0
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 4,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 1,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 3,
+            "position": {
+              "x": 4,
+              "y": 20
+            },
+            "point": {
+              "x": 4,
+              "y": 20
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 4,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 1,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 4,
+            "position": {
+              "x": 16,
+              "y": 20
+            },
+            "point": {
+              "x": 16,
+              "y": 20
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 4,
+            "range": 1,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 1,
+              "vision": 0
+            }
+          }
+        ]
+      },
+      {
+        "time": 19,
+        "roundId": 20,
+        "players": [
+          {
+            "playerId": 1,
+            "position": {
+              "x": 4,
+              "y": 0
+            },
+            "point": {
+              "x": 4,
+              "y": 0
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 4,
+            "range": 2,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 2,
+            "position": {
+              "x": 16,
+              "y": 0
+            },
+            "point": {
+              "x": 16,
+              "y": 0
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 4,
+            "range": 2,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 3,
+            "position": {
+              "x": 4,
+              "y": 20
+            },
+            "point": {
+              "x": 4,
+              "y": 20
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 4,
+            "range": 2,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 4,
+            "position": {
+              "x": 16,
+              "y": 20
+            },
+            "point": {
+              "x": 16,
+              "y": 20
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 4,
+            "range": 2,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          }
+        ]
+      },
+      {
+        "time": 20,
+        "roundId": 20,
+        "players": [
+          {
+            "playerId": 1,
+            "position": {
+              "x": 2,
+              "y": 0
+            },
+            "point": {
+              "x": 2,
+              "y": 0
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 4,
+            "range": 2,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 2,
+            "position": {
+              "x": 18,
+              "y": 0
+            },
+            "point": {
+              "x": 18,
+              "y": 0
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 4,
+            "range": 2,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 3,
+            "position": {
+              "x": 2,
+              "y": 20
+            },
+            "point": {
+              "x": 2,
+              "y": 20
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 4,
+            "range": 2,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 4,
+            "position": {
+              "x": 18,
+              "y": 20
+            },
+            "point": {
+              "x": 18,
+              "y": 20
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 4,
+            "range": 2,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          }
+        ]
+      },
+      {
+        "time": 21,
+        "roundId": 21,
+        "players": [
+          {
+            "playerId": 1,
+            "position": {
+              "x": 0,
+              "y": 0
+            },
+            "point": {
+              "x": 0,
+              "y": 0
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 4,
+            "range": 2,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 2,
+            "position": {
+              "x": 20,
+              "y": 0
+            },
+            "point": {
+              "x": 20,
+              "y": 0
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 4,
+            "range": 2,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 3,
+            "position": {
+              "x": 0,
+              "y": 20
+            },
+            "point": {
+              "x": 0,
+              "y": 20
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 4,
+            "range": 2,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          },
+          {
+            "playerId": 4,
+            "position": {
+              "x": 20,
+              "y": 20
+            },
+            "point": {
+              "x": 20,
+              "y": 20
+            },
+            "alive": true,
+            "speed": 2,
+            "capacity": 4,
+            "range": 2,
+            "vision": 2,
+            "pending": {
+              "speed": 0,
+              "capacity": 0,
+              "range": 0,
+              "vision": 0
+            }
+          }
+        ]
+      }
+    ],
+    "observations": [
+      {
+        "roundId": 1,
+        "playerId": 1,
+        "cellCount": 9,
+        "vision": 2,
+        "items": [],
+        "self": {
+          "speed": 1,
+          "capacity": 3,
+          "range": 1,
+          "pending": {
+            "speed": 0,
+            "capacity": 0,
+            "range": 0,
+            "vision": 0
+          }
+        }
+      },
+      {
+        "roundId": 1,
+        "playerId": 2,
+        "cellCount": 9,
+        "vision": 2,
+        "items": [],
+        "self": {
+          "speed": 1,
+          "capacity": 3,
+          "range": 1,
+          "pending": {
+            "speed": 0,
+            "capacity": 0,
+            "range": 0,
+            "vision": 0
+          }
+        }
+      },
+      {
+        "roundId": 1,
+        "playerId": 3,
+        "cellCount": 9,
+        "vision": 2,
+        "items": [],
+        "self": {
+          "speed": 1,
+          "capacity": 3,
+          "range": 1,
+          "pending": {
+            "speed": 0,
+            "capacity": 0,
+            "range": 0,
+            "vision": 0
+          }
+        }
+      },
+      {
+        "roundId": 1,
+        "playerId": 4,
+        "cellCount": 9,
+        "vision": 2,
+        "items": [],
+        "self": {
+          "speed": 1,
+          "capacity": 3,
+          "range": 1,
+          "pending": {
+            "speed": 0,
+            "capacity": 0,
+            "range": 0,
+            "vision": 0
+          }
+        }
+      },
+      {
+        "roundId": 8,
+        "playerId": 1,
+        "cellCount": 15,
+        "vision": 2,
+        "items": [],
+        "self": {
+          "speed": 2,
+          "capacity": 3,
+          "range": 1,
+          "pending": {
+            "speed": 0,
+            "capacity": 0,
+            "range": 0,
+            "vision": 0
+          }
+        }
+      },
+      {
+        "roundId": 8,
+        "playerId": 2,
+        "cellCount": 15,
+        "vision": 2,
+        "items": [],
+        "self": {
+          "speed": 2,
+          "capacity": 3,
+          "range": 1,
+          "pending": {
+            "speed": 0,
+            "capacity": 0,
+            "range": 0,
+            "vision": 0
+          }
+        }
+      },
+      {
+        "roundId": 8,
+        "playerId": 3,
+        "cellCount": 15,
+        "vision": 2,
+        "items": [],
+        "self": {
+          "speed": 2,
+          "capacity": 3,
+          "range": 1,
+          "pending": {
+            "speed": 0,
+            "capacity": 0,
+            "range": 0,
+            "vision": 0
+          }
+        }
+      },
+      {
+        "roundId": 8,
+        "playerId": 4,
+        "cellCount": 15,
+        "vision": 2,
+        "items": [],
+        "self": {
+          "speed": 2,
+          "capacity": 3,
+          "range": 1,
+          "pending": {
+            "speed": 0,
+            "capacity": 0,
+            "range": 0,
+            "vision": 0
+          }
+        }
+      },
+      {
+        "roundId": 13,
+        "playerId": 1,
+        "cellCount": 15,
+        "vision": 2,
+        "items": [],
+        "self": {
+          "speed": 2,
+          "capacity": 4,
+          "range": 1,
+          "pending": {
+            "speed": 0,
+            "capacity": 0,
+            "range": 0,
+            "vision": 0
+          }
+        }
+      },
+      {
+        "roundId": 13,
+        "playerId": 2,
+        "cellCount": 15,
+        "vision": 2,
+        "items": [],
+        "self": {
+          "speed": 2,
+          "capacity": 4,
+          "range": 1,
+          "pending": {
+            "speed": 0,
+            "capacity": 0,
+            "range": 0,
+            "vision": 0
+          }
+        }
+      },
+      {
+        "roundId": 13,
+        "playerId": 3,
+        "cellCount": 15,
+        "vision": 2,
+        "items": [],
+        "self": {
+          "speed": 2,
+          "capacity": 4,
+          "range": 1,
+          "pending": {
+            "speed": 0,
+            "capacity": 0,
+            "range": 0,
+            "vision": 0
+          }
+        }
+      },
+      {
+        "roundId": 13,
+        "playerId": 4,
+        "cellCount": 15,
+        "vision": 2,
+        "items": [],
+        "self": {
+          "speed": 2,
+          "capacity": 4,
+          "range": 1,
+          "pending": {
+            "speed": 0,
+            "capacity": 0,
+            "range": 0,
+            "vision": 0
+          }
+        }
+      },
+      {
+        "roundId": 20,
+        "playerId": 1,
+        "cellCount": 15,
+        "vision": 2,
+        "items": [],
+        "self": {
+          "speed": 2,
+          "capacity": 4,
+          "range": 2,
+          "pending": {
+            "speed": 0,
+            "capacity": 0,
+            "range": 0,
+            "vision": 0
+          }
+        }
+      },
+      {
+        "roundId": 20,
+        "playerId": 2,
+        "cellCount": 15,
+        "vision": 2,
+        "items": [],
+        "self": {
+          "speed": 2,
+          "capacity": 4,
+          "range": 2,
+          "pending": {
+            "speed": 0,
+            "capacity": 0,
+            "range": 0,
+            "vision": 0
+          }
+        }
+      },
+      {
+        "roundId": 20,
+        "playerId": 3,
+        "cellCount": 15,
+        "vision": 2,
+        "items": [],
+        "self": {
+          "speed": 2,
+          "capacity": 4,
+          "range": 2,
+          "pending": {
+            "speed": 0,
+            "capacity": 0,
+            "range": 0,
+            "vision": 0
+          }
+        }
+      },
+      {
+        "roundId": 20,
+        "playerId": 4,
+        "cellCount": 15,
+        "vision": 2,
+        "items": [],
+        "self": {
+          "speed": 2,
+          "capacity": 4,
+          "range": 2,
+          "pending": {
+            "speed": 0,
+            "capacity": 0,
+            "range": 0,
+            "vision": 0
+          }
+        }
+      }
+    ],
+    "events": [
+      {
+        "kind": "initialBubble",
+        "count": 0
+      },
+      {
+        "kind": "itemGenerated",
+        "count": 12
+      },
+      {
+        "kind": "itemExposed",
+        "count": 12
+      },
+      {
+        "kind": "itemDestroyed",
+        "count": 0
+      },
+      {
+        "kind": "itemPicked",
+        "count": 12
+      },
+      {
+        "kind": "itemPicked",
+        "count": 4,
+        "time": 7,
+        "itemType": "speed"
+      },
+      {
+        "kind": "itemPicked",
+        "count": 4,
+        "time": {
+          "numerator": 23,
+          "denominator": 2
+        },
+        "itemType": "capacity"
+      },
+      {
+        "kind": "itemPicked",
+        "count": 4,
+        "time": 19,
+        "itemType": "range"
+      },
+      {
+        "kind": "attributeActivated",
+        "count": 4,
+        "time": 7,
+        "roundId": 8,
+        "itemType": "speed",
+        "value": 2,
+        "phase": "roundStart"
+      },
+      {
+        "kind": "attributeActivated",
+        "count": 4,
+        "time": 12,
+        "roundId": 13,
+        "itemType": "capacity",
+        "value": 4,
+        "phase": "roundStart"
+      },
+      {
+        "kind": "attributeActivated",
+        "count": 4,
+        "time": 19,
+        "roundId": 20,
+        "itemType": "range",
+        "value": 2,
+        "phase": "roundStart"
+      },
+      {
+        "kind": "placed",
+        "count": 24
+      },
+      {
+        "kind": "placed",
+        "count": 8,
+        "roundId": 13
+      },
+      {
+        "kind": "placed",
+        "count": 8,
+        "roundId": 20
+      },
+      {
+        "kind": "placementSkipped",
+        "count": 0
+      },
+      {
+        "kind": "actionIgnored",
+        "count": 0
+      },
+      {
+        "kind": "returned",
+        "count": 16
+      },
+      {
+        "kind": "exploded",
+        "count": 4,
+        "time": 4
+      },
+      {
+        "kind": "exploded",
+        "count": 4,
+        "time": 10
+      },
+      {
+        "kind": "exploded",
+        "count": 4,
+        "time": 15
+      },
+      {
+        "kind": "exploded",
+        "count": 4,
+        "time": 16
+      },
+      {
+        "kind": "exploded",
+        "count": 8,
+        "time": 22
+      },
+      {
+        "kind": "chained",
+        "count": 4,
+        "time": 22
+      },
+      {
+        "kind": "death",
+        "count": 4,
+        "time": 22
+      },
+      {
+        "kind": "crateDestroyed",
+        "count": 28
+      },
+      {
+        "kind": "matchEnded",
+        "count": 1
+      },
+      {
+        "kind": "placed",
+        "count": 2,
+        "roundId": 13,
+        "playerId": 1
+      },
+      {
+        "kind": "placed",
+        "count": 2,
+        "roundId": 20,
+        "playerId": 1
+      },
+      {
+        "kind": "state",
+        "count": 1,
+        "time": 21,
+        "roundId": 21,
+        "playerId": 1,
+        "value": 2
+      },
+      {
+        "kind": "covered",
+        "count": 1,
+        "time": 22,
+        "bubbleId": 21,
+        "position": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "kind": "covered",
+        "count": 0,
+        "time": 22,
+        "bubbleId": 17,
+        "position": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "kind": "placed",
+        "count": 2,
+        "roundId": 13,
+        "playerId": 2
+      },
+      {
+        "kind": "placed",
+        "count": 2,
+        "roundId": 20,
+        "playerId": 2
+      },
+      {
+        "kind": "state",
+        "count": 1,
+        "time": 21,
+        "roundId": 21,
+        "playerId": 2,
+        "value": 2
+      },
+      {
+        "kind": "covered",
+        "count": 1,
+        "time": 22,
+        "bubbleId": 22,
+        "position": {
+          "x": 20,
+          "y": 0
+        }
+      },
+      {
+        "kind": "covered",
+        "count": 0,
+        "time": 22,
+        "bubbleId": 18,
+        "position": {
+          "x": 20,
+          "y": 0
+        }
+      },
+      {
+        "kind": "placed",
+        "count": 2,
+        "roundId": 13,
+        "playerId": 3
+      },
+      {
+        "kind": "placed",
+        "count": 2,
+        "roundId": 20,
+        "playerId": 3
+      },
+      {
+        "kind": "state",
+        "count": 1,
+        "time": 21,
+        "roundId": 21,
+        "playerId": 3,
+        "value": 2
+      },
+      {
+        "kind": "covered",
+        "count": 1,
+        "time": 22,
+        "bubbleId": 23,
+        "position": {
+          "x": 0,
+          "y": 20
+        }
+      },
+      {
+        "kind": "covered",
+        "count": 0,
+        "time": 22,
+        "bubbleId": 19,
+        "position": {
+          "x": 0,
+          "y": 20
+        }
+      },
+      {
+        "kind": "placed",
+        "count": 2,
+        "roundId": 13,
+        "playerId": 4
+      },
+      {
+        "kind": "placed",
+        "count": 2,
+        "roundId": 20,
+        "playerId": 4
+      },
+      {
+        "kind": "state",
+        "count": 1,
+        "time": 21,
+        "roundId": 21,
+        "playerId": 4,
+        "value": 2
+      },
+      {
+        "kind": "covered",
+        "count": 1,
+        "time": 22,
+        "bubbleId": 24,
+        "position": {
+          "x": 20,
+          "y": 20
+        }
+      },
+      {
+        "kind": "covered",
+        "count": 0,
+        "time": 22,
+        "bubbleId": 20,
+        "position": {
+          "x": 20,
+          "y": 20
+        }
+      }
+    ],
+    "end": {
+      "tick": 22,
+      "winnerId": null
+    }
+  }
+}

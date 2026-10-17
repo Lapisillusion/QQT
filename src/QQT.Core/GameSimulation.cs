@@ -4,7 +4,7 @@ using System.Text.Json;
 namespace QQT.Core;
 
 /// <summary>四人精确事件模拟：跨线检查、中心放置、原速回退、瞬时爆炸与即时胜负。输出事件由宿主记录和展示。</summary>
-public sealed class GameSimulation : IDisposable
+public sealed partial class GameSimulation : IDisposable
 {
     public const int Size = 21;
     public const int CellCount = Size * Size;
@@ -64,6 +64,7 @@ public sealed class GameSimulation : IDisposable
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         Time = 0;
+        ResetItems();
         Tick = _eventCount = _moveCount = _bubbleCount = _nextBubbleId = _placed = _exploded = _destroyed = 0;
         Ended = false; WinnerId = null; EndTick = null;
         CrateCount = 0;
@@ -74,14 +75,14 @@ public sealed class GameSimulation : IDisposable
                 _terrain[p.Index] = InitialCell(p);
                 if (_terrain[p.Index] == Cell.Crate) CrateCount++;
             }
-        for (int i = 0; i < 4; i++) _players[i] = new Player { Id = i + 1, Position = Spawn(i), Point = ExactPosition.Center(Spawn(i)), Speed = 1, Capacity = 3, Range = 1, Lifetime = 3 };
+        for (int i = 0; i < 4; i++) _players[i] = new Player { Id = i + 1, Position = Spawn(i), Point = ExactPosition.Center(Spawn(i)), Speed = 1, Capacity = 3, Range = 1, Vision = 2, Lifetime = 3 };
         SaveInitialTerrain();
     }
 
     /// <summary>测试环境只改变初始条件，后续使用与正式地图完全相同的模拟路径。</summary>
     public void Configure(JsonElement initial)
     {
-        if (Tick != 0 || Time != 0) throw new InvalidOperationException("只能初始化尚未推进的世界。");
+        if (Tick != 0 || Time != 0 || _roundPrepared || _itemsConfigured) throw new InvalidOperationException("只能初始化尚未配置道具或推进的世界。");
         if (initial.GetProperty("map").GetString() != "empty") throw new InvalidDataException("测试地图必须是 empty。");
         _terrain.AsSpan(0, CellCount).Clear();
         if (initial.TryGetProperty("walls", out var walls))
@@ -105,7 +106,7 @@ public sealed class GameSimulation : IDisposable
             player.Position = ScenarioScript.ReadPosition(row.GetProperty("position"));
             if (_terrain[player.Position.Index] != Cell.Empty) throw new InvalidDataException("出生点不可位于障碍。");
             player.Point = ExactPosition.Center(player.Position);
-            player.Speed = Positive(row, "speed", 1); player.Capacity = Positive(row, "capacity", 3); player.Range = Positive(row, "range", 1);
+            player.Speed = Positive(row, "speed", 1); player.Capacity = Positive(row, "capacity", 3); player.Range = Positive(row, "range", 1); player.Vision = Positive(row, "vision", 2);
             player.Lifetime = row.TryGetProperty("lifetime", out var life) ? RationalTime.Read(life) : 3;
             if (player.Lifetime <= 0) throw new InvalidDataException("泡泡寿命必须为正。");
         }
@@ -149,6 +150,7 @@ public sealed class GameSimulation : IDisposable
         ObjectDisposedException.ThrowIf(_disposed, this);
         if (Ended) throw new InvalidOperationException("已结束的对局不能继续推进。");
         if (plans.Length != 4) throw new InvalidOperationException("需要四人完整计划。");
+        PrepareRound(); // 新轮属性必须先于路径校验激活；宿主也可提前调用以生成冻结观察。
         for (int i = 0; i < 4; i++)
         {
             var plan = plans[i];
@@ -169,7 +171,7 @@ public sealed class GameSimulation : IDisposable
                 for (int j = 0; j < k; j++) if (plan.PlacementAt(j) == point) throw new InvalidDataException("同轮放置点重复。");
             }
         }
-        _eventCount = _moveCount = 0;
+        _roundPrepared = false; _phase = SimulationPhase.Execution;
         _attempted.AsSpan(0, 4 * Size).Clear(); _segments.AsSpan(0, 4).Clear();
         var end = (RationalTime)(++Tick);
         for (int i = 0; i < 4; i++) if (!_players[i].Alive)
@@ -181,6 +183,7 @@ public sealed class GameSimulation : IDisposable
         ExplodeDue();
         if (ResolveOutcome()) return;
         SkipRemaining(plans, true);
+        PickItems();
         AttemptCenters(plans, true);
         for (int i = 0; i < 4; i++) StartSegment(i, plans[i].Direction, end);
         RecordStates();
@@ -225,6 +228,7 @@ public sealed class GameSimulation : IDisposable
             ExplodeDue();
             if (ResolveOutcome()) return;
             SkipRemaining(plans, true);
+            PickItems();
             AttemptCenters(plans, false);
             if (Time == end) SkipRemaining(plans);
             for (int i = 0; i < 4; i++) if (!_segments[i].Active && !_segments[i].Returning) StartSegment(i, plans[i].Direction, end);
@@ -336,6 +340,7 @@ public sealed class GameSimulation : IDisposable
                 Add(new(EventKind.Exploded, Time, bubble.OwnerId, bubble.Id, bubble.Position, bubble.Position, true) { RelatedTime = bubble.DueAt });
                 TraceBlast(bubble, _players[bubble.OwnerId - 1].Range, covered, scheduled, pending, ref pendingCount);
             }
+            DestroyExposedItems(covered); // 清理原有露出道具后才释放箱内道具，整批覆盖不重复销毁新掉落者。
             for (int i = 0; i < CellCount; i++)
                 if (covered[i] && _terrain[i] == Cell.Crate)
                 {
@@ -344,6 +349,7 @@ public sealed class GameSimulation : IDisposable
                     _destroyed++;
                     var p = new Position(i % Size, i / Size);
                     Add(new(EventKind.CrateDestroyed, Time, 0, 0, p, p, true));
+                    ExposeItem(p);
                 }
             // 先清理本批已爆炸泡泡，再记录死亡时仍在场的自有泡泡。
             int retained = 0;
@@ -418,20 +424,23 @@ public sealed class GameSimulation : IDisposable
     private void Add(SimulationEvent item)
     {
         Grow(ref _events, _eventCount, _eventCount + 1);
-        _events[_eventCount++] = item with { Point = item.PlayerId is >= 1 and <= 4 ? _players[item.PlayerId - 1].Point : default, RoundId = Tick };
+        _events[_eventCount++] = item with { Point = item.PlayerId is >= 1 and <= 4 ? _players[item.PlayerId - 1].Point : default, RoundId = _phase == SimulationPhase.RoundStart ? Tick + 1 : Tick, Phase = _phase,
+            Attributes = item.PlayerId is >= 1 and <= 4 ? PlayerAttributes.From(_players[item.PlayerId - 1]) : default,
+            Pending = item.PlayerId is >= 1 and <= 4 ? _players[item.PlayerId - 1].Pending : default };
     }
 
     /// <summary>按脚本独立声明的结果验收，死亡场景预期死亡也可以验证通过。</summary>
     public ValidationResult Validate(JsonElement expected, ReadOnlySpan<SimulationEvent> history)
     {
         int safe = 0, walls = 0, expectedDeaths = 0, deaths = 0, deadSkips = 0, ignored = 0;
-        bool playersMatch = true, mapMatches = true, bubblesMatch = true, actionsMatch = true;
+        bool playersMatch = true, mapMatches = true, bubblesMatch = true, actionsMatch = true, attributesMatch = true;
         var expectedPlayers = expected.GetProperty("players");
         for (int i = 0; i < 4; i++)
         {
             var player = _players[i];
             if (player.Alive) safe++;
             var row = expectedPlayers[i];
+            attributesMatch &= MatchAttributes(row, PlayerAttributes.From(player), player.Pending);
             if (row.TryGetProperty("point", out var finalPoint)) playersMatch &= player.Point.X == RationalTime.Read(finalPoint.GetProperty("x")) && player.Point.Y == RationalTime.Read(finalPoint.GetProperty("y"));
             var deathJson = row.GetProperty("deathTick");
             RationalTime? death = deathJson.ValueKind == JsonValueKind.Null ? null : RationalTime.Read(deathJson);
@@ -543,6 +552,7 @@ public sealed class GameSimulation : IDisposable
                         if (e.Kind == EventKind.State && e.Tick == at && e.PlayerId == id && (!row.TryGetProperty("roundId", out var round) || e.RoundId == round.GetInt32()))
                         {
                             found = true;
+                            attributesMatch &= MatchAttributes(player, e.Attributes, e.Pending);
                             playersMatch &= e.Position == ScenarioScript.ReadPosition(player.GetProperty("position")) && e.Success == player.GetProperty("alive").GetBoolean();
                             if (player.TryGetProperty("point", out var point)) playersMatch &= e.Point.X == RationalTime.Read(point.GetProperty("x")) && e.Point.Y == RationalTime.Read(point.GetProperty("y"));
                         }
@@ -559,17 +569,25 @@ public sealed class GameSimulation : IDisposable
                         (!row.TryGetProperty("playerId", out var id) || e.PlayerId == id.GetInt32()) &&
                         (!row.TryGetProperty("bubbleId", out var bubbleId) || e.BubbleId == bubbleId.GetInt32()) &&
                         (!row.TryGetProperty("position", out var point) || e.Position == ScenarioScript.ReadPosition(point)) &&
-                        (!row.TryGetProperty("reason", out var reason) || e.Reason == Enum.Parse<SkipReason>(reason.GetString()!, true))) matches++;
+                        (!row.TryGetProperty("reason", out var reason) || e.Reason == Enum.Parse<SkipReason>(reason.GetString()!, true)) &&
+                        (!row.TryGetProperty("itemType", out var itemType) || e.ItemType == ItemNames.Parse(itemType.GetString())) &&
+                        (!row.TryGetProperty("value", out var value) || e.Value == value.GetInt32()) &&
+                        (!row.TryGetProperty("roundId", out var roundId) || e.RoundId == roundId.GetInt32()) &&
+                        (!row.TryGetProperty("phase", out var phase) || e.Phase == Enum.Parse<SimulationPhase>(phase.GetString()!, true))) matches++;
                 actionsMatch &= matches == row.GetProperty("count").GetInt32();
             }
-        bool passed = playersMatch && mapMatches && bubblesMatch && actionsMatch && outcomeMatches;
+        bool itemsMatch = ValidateItems(expected);
+        if (expected.TryGetProperty("observations", out var observationRows)) _observationsMatch &= _checkedObservationCount == observationRows.GetArrayLength();
+        bool passed = playersMatch && mapMatches && bubblesMatch && actionsMatch && outcomeMatches && attributesMatch && itemsMatch && _observationsMatch;
         return new(passed, Tick, CrateCount, walls, _bubbleCount, safe, _placed, _exploded, _destroyed, mapMatches,
-            4 - safe, deaths, playersMatch, bubblesMatch, actionsMatch, outcomeMatches);
+            4 - safe, deaths, playersMatch, bubblesMatch, actionsMatch, outcomeMatches)
+        { ItemsMatch = itemsMatch, AttributesMatch = attributesMatch, ObservationsMatch = _observationsMatch };
     }
     public void Dispose()
     {
         if (_disposed) return;
         _disposed = true;
+        ArrayPool<ItemState>.Shared.Return(_items);
         ArrayPool<Cell>.Shared.Return(_terrain);
         ArrayPool<Cell>.Shared.Return(_initialTerrain);
         ArrayPool<MovementSegment>.Shared.Return(_segments);

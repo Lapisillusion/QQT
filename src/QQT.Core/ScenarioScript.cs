@@ -12,6 +12,7 @@ public sealed class ScenarioScript : IDisposable
     public string Name { get; private set; } = "M0";
     public int TotalTicks { get; }
     public JsonElement? Initial => _document!.RootElement.TryGetProperty("initial", out var initial) ? initial : null;
+    public JsonElement? Items => _document!.RootElement.TryGetProperty("items", out var items) ? items : null;
     public JsonElement Expected => _document?.RootElement.GetProperty("expected") ?? throw new ObjectDisposedException(nameof(ScenarioScript));
 
     private ScenarioScript(int totalTicks)
@@ -97,6 +98,13 @@ public sealed class ScenarioScript : IDisposable
                 if (time < 0 || time > TotalTicks) throw new InvalidDataException("预期死亡时刻非法。");
             }
         }
+        if (expected.TryGetProperty("observations", out var observations))
+            foreach (var row in observations.EnumerateArray())
+            {
+                int round = row.GetProperty("roundId").GetInt32();
+                if (round < 1 || round > TotalTicks || row.GetProperty("playerId").GetInt32() is < 1 or > 4)
+                    throw new InvalidDataException("观察断言的轮次或玩家非法。");
+            }
         int id = 0;
         foreach (var bubble in expected.GetProperty("bubbles").EnumerateArray())
         {

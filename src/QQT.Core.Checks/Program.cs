@@ -4,7 +4,7 @@ using QQT.Core;
 
 // 范围 1 的正式脚本无法区分射线穿透错误。仅在此检查中以私有扫描器构造范围 3 的
 // 合成走廊，不增加游戏配置或改变初始属性；检查与业务使用同一个扫描实现。
-static class Program
+static partial class Program
 {
     private delegate void Trace(Bubble bubble, int range, bool[] covered, bool[] scheduled, int[] pending, ref int count);
     private static FieldInfo Field(string name) => typeof(GameSimulation).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!;
@@ -12,9 +12,10 @@ static class Program
 
     public static void Main(string[] args)
     {
-        if (args.Length != 1) throw new ArgumentException("需要连锁获胜脚本的绝对路径。");
+        if (args.Length is < 1 or > 2) throw new ArgumentException("需要连锁获胜脚本的绝对路径。");
         CheckRays();
         CheckTermination(args[0]);
+        if (args.Length == 2) CheckItemObservationLifetime(args[1]);
         Console.WriteLine("CHAIN_BOUNDARIES Passed=True: penetration, range limit, wall/crate stop, shared old terrain, same-cell deduplication, winner placement cancellation, draw, ended guard and reset.");
     }
 

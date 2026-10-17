@@ -3,11 +3,13 @@ export {};
 type Fraction = { numerator: number; denominator: number };
 type ExactPosition = { x: Fraction; y: Fraction };
 type Position = { x: number; y: number };
-type Player = { id: number; position: Position; hit: boolean; alive: boolean; deathTick: Fraction | null; point: ExactPosition; speed: number; capacity: number; range: number; lifetime: Fraction };
+type ItemGains = { speed: number; capacity: number; range: number; vision: number };
+type GroundItem = { id: number; position: Position; type: string; status: string; effect: number };
+type Player = { id: number; position: Position; hit: boolean; alive: boolean; deathTick: Fraction | null; point: ExactPosition; speed: number; capacity: number; range: number; vision: number; pending: ItemGains; lifetime: Fraction };
 type Bubble = { id: number; ownerId: number; position: Position; dueAt: Fraction };
 type Move = { playerId: number; from: ExactPosition; to: ExactPosition; start: Fraction; end: Fraction };
-type GameEvent = { sequence: number; kind: string; tick: Fraction; relatedTime: Fraction; point: ExactPosition; roundId: number; playerId: number; bubbleId: number; position: Position; from: Position; success: boolean; value: number; reason: string };
-type Frame = { type: "frame"; runId: string; name: string; totalTicks: number; status: string; error: string; tick: number; size: number; time: Fraction; durationMs: number; animate: boolean; terrain: number[]; players: Player[]; bubbles: Bubble[]; moves: Move[]; events: GameEvent[]; crateCount: number; bubbleCount: number; ended: boolean; winnerId: number | null; endTick: Fraction | null; result?: { passed: boolean; safePlayers: number; walls: number; placed: number; exploded: number; destroyed: number; mapMatches: boolean; deadPlayers: number; deaths: number } };
+type GameEvent = { sequence: number; kind: string; tick: Fraction; relatedTime: Fraction; point: ExactPosition; roundId: number; playerId: number; bubbleId: number; position: Position; from: Position; success: boolean; value: number; reason: string; itemType: string; previousValue: number; attributes: ItemGains; pending: ItemGains; phase: string };
+type Frame = { type: "frame"; runId: string; name: string; totalTicks: number; status: string; error: string; tick: number; size: number; time: Fraction; durationMs: number; animate: boolean; terrain: number[]; items: GroundItem[]; players: Player[]; bubbles: Bubble[]; moves: Move[]; events: GameEvent[]; crateCount: number; bubbleCount: number; ended: boolean; winnerId: number | null; endTick: Fraction | null; result?: { passed: boolean; safePlayers: number; walls: number; placed: number; exploded: number; destroyed: number; mapMatches: boolean; deadPlayers: number; deaths: number } };
 
 function element<T extends HTMLElement>(id: string): T { return document.getElementById(id) as T; }
 const canvas = element<HTMLCanvasElement>("map");
@@ -33,6 +35,18 @@ const colors = ["#91d5ff", "#ffa99b", "#c4b0fa", "#b9ed8b"];
 const placedEvents = new Map<number, GameEvent>();
 const explodedEvents = new Map<number, GameEvent>();
 const destroyedTimes = new Map<number, number>();
+const exposedItemEvents = new Map<number, GameEvent>();
+const removedItemEvents = new Map<number, GameEvent>();
+const itemLabels: Record<string, string> = { speed: "移速", capacity: "泡泡容量", range: "火力", vision: "视野半径" };
+// 四张图标在页面启动时加载并复用；不在绘制帧中创建图片或临时集合。
+const itemIcons: Record<string, HTMLImageElement> = {
+  speed: loadItemIcon("speed"), capacity: loadItemIcon("capacity"),
+  range: loadItemIcon("range"), vision: loadItemIcon("vision")
+};
+function loadItemIcon(type: string): HTMLImageElement {
+  const icon = new Image(); icon.decoding = "async"; icon.src = `/icons/item-${type}.svg`; return icon;
+}
+let displayedAttributeSequence = 0;
 function number(value: Fraction): number { return value.numerator / value.denominator; }
 function exact(value: Fraction): string { return value.denominator === 1 ? String(value.numerator) : `${value.numerator}/${value.denominator}`; }
 let socket: WebSocket | null = null;
@@ -46,6 +60,11 @@ let viewSize = 600;
 function gridName(p: Position): string { return String.fromCharCode(65 + p.x) + (p.y + 1); }
 function eventText(e: GameEvent): string {
   switch (e.kind) {
+    case "itemGenerated": return `${gridName(e.position)} 箱内预藏${itemLabels[e.itemType]}道具（观战信息）`;
+    case "itemExposed": return `${gridName(e.position)} 露出${itemLabels[e.itemType]} +1 道具`;
+    case "itemDestroyed": return `${gridName(e.position)} 的${itemLabels[e.itemType]}道具被爆炸销毁`;
+    case "itemPicked": return `玩家 ${e.playerId} 在 ${gridName(e.position)} 拾取${itemLabels[e.itemType]} +1，下轮生效`;
+    case "attributeActivated": return `第 ${e.roundId} 轮玩家 ${e.playerId} ${itemLabels[e.itemType]}：${e.previousValue} → ${e.value}`;
     case "entered": return `玩家 ${e.playerId} 跨线进入 ${gridName(e.position)}`;
     case "returnStarted": return `玩家 ${e.playerId} 遇阻，原速退回 ${gridName(e.position)} 中心`;
     case "returned": return `玩家 ${e.playerId} 已退回 ${gridName(e.position)} 中心，本轮停止移动`;
@@ -77,13 +96,13 @@ function applyFrame(frame: Frame, now: number): void {
   bubbles.textContent = String(frame.bubbleCount);
   crates.textContent = String(frame.crateCount);
   let safeCount = 0;
-  players.replaceChildren();
   for (const p of frame.players) {
     if (p.alive) safeCount++;
-    const row = document.createElement("div"); row.className = "player";
-    const dot = document.createElement("i"); dot.className = "player-dot"; dot.style.background = colors[p.id - 1];
-    row.title = `速度 ${p.speed} 格/tick · 容量 ${p.capacity} · 范围 ${p.range} · 寿命 ${exact(p.lifetime)} tick · 质点 (${exact(p.point.x)}, ${exact(p.point.y)})`;
-    row.append(dot, `P${p.id} · ${gridName(p.position)}${p.alive ? "" : ` · 已死亡 t=${exact(p.deathTick!)}`}`); players.append(row);
+    const card = players.children[p.id - 1] as HTMLElement;
+    card.classList.toggle("is-dead", !p.alive);
+    card.querySelector(".player-location")!.textContent = gridName(p.position);
+    card.querySelector(".player-status")!.textContent = p.alive ? "存活" : "已淘汰";
+    updateAttributeRow(p.id, p, p.pending);
   }
   safe.textContent = String(safeCount);
   status.textContent = frame.status === "running" ? "验证进行中" : frame.status === "passed" ? "验证通过" : frame.status === "failed" ? "验证失败" : frame.status === "error" ? "运行错误" : "准备就绪";
@@ -108,8 +127,44 @@ function applyFrame(frame: Frame, now: number): void {
   }
   eventCount.textContent = `${log.childElementCount} 条`;
   log.scrollTop = log.scrollHeight;
+  displayedAttributeSequence = loggedSequence;
   start.textContent = frame.tick > 0 ? "重新运行 ↗" : "开始验证 ↗";
   start.disabled = socket?.readyState !== WebSocket.OPEN || frame.status === "running";
+}
+
+// 四张卡片按页面生命周期持有，消息和动画事件只改值，避免逐 tick 重建 DOM。
+function initializePlayerCards(): void {
+  for (let id = 1; id <= 4; id++) {
+    const card = document.createElement("article"); card.className = "player player-card";
+    card.style.setProperty("--player-color", colors[id - 1]); card.setAttribute("aria-label", `玩家 ${id} 实时属性`);
+    card.innerHTML = `<div class="player-header"><span class="player-id">${id}</span><div class="player-heading"><strong>玩家 ${id}</strong><span class="player-location">—</span></div><span class="player-status">等待</span></div>
+      <dl class="player-stats" aria-live="polite">
+        <div data-stat="speed"><dt><img src="/icons/item-speed.svg" alt="">移速</dt><dd><strong class="stat-value">—</strong><small class="stat-unit">格/tick</small></dd><span class="stat-pending" hidden></span></div>
+        <div data-stat="range"><dt><img src="/icons/item-range.svg" alt="">火力</dt><dd><strong class="stat-value">—</strong><small class="stat-unit">格/方向</small></dd><span class="stat-pending" hidden></span></div>
+        <div data-stat="capacity"><dt><img src="/icons/item-capacity.svg" alt="">泡泡容量</dt><dd><strong class="stat-value">—</strong><small class="stat-unit">颗</small></dd><span class="stat-pending" hidden></span></div>
+        <div data-stat="vision"><dt><img src="/icons/item-vision.svg" alt="">视野</dt><dd><strong class="stat-value">—</strong><small class="stat-unit">R=—</small></dd><span class="stat-pending" hidden></span></div>
+      </dl>`;
+    players.append(card);
+  }
+}
+function updateStat(card: HTMLElement, name: string, value: string, pending: number, unit?: string): void {
+  const stat = card.querySelector(`[data-stat="${name}"]`)!;
+  stat.querySelector(".stat-value")!.textContent = value;
+  if (unit !== undefined) stat.querySelector(".stat-unit")!.textContent = unit;
+  const next = stat.querySelector(".stat-pending") as HTMLElement;
+  next.hidden = pending === 0;
+  next.textContent = pending > 0 ? `下轮 +${pending}` : "";
+}
+function updateAttributeRow(id: number, values: ItemGains, pending: ItemGains): void {
+  const card = players.children[id - 1] as HTMLElement | undefined;
+  if (!card || !current) return;
+  updateStat(card, "speed", String(values.speed), pending.speed);
+  updateStat(card, "range", String(values.range), pending.range);
+  updateStat(card, "capacity", String(values.capacity), pending.capacity);
+  const width = values.vision * 2 + 1;
+  updateStat(card, "vision", `${width}×${width}`, pending.vision, `R=${values.vision}`);
+  const p = current.players[id - 1];
+  card.title = `速度 ${values.speed} 格/tick · 容量 ${values.capacity} · 火力 ${values.range} 格/方向 · 视野 R=${values.vision}（地图边缘裁剪） · 寿命 ${exact(p.lifetime)} tick · 质点 (${exact(p.point.x)}, ${exact(p.point.y)})`;
 }
 
 function receive(message: MessageEvent<string>): void {
@@ -117,10 +172,12 @@ function receive(message: MessageEvent<string>): void {
   const data = JSON.parse(message.data) as Frame | { type: "error"; message: string };
   if (data.type === "error") { result.textContent = data.message; result.className = "result failure"; return; }
   const now = performance.now();
-  if (current?.runId !== data.runId) { placedEvents.clear(); explodedEvents.clear(); destroyedTimes.clear(); }
+  if (current?.runId !== data.runId) { placedEvents.clear(); explodedEvents.clear(); destroyedTimes.clear(); exposedItemEvents.clear(); removedItemEvents.clear(); displayedAttributeSequence = 0; }
   for (const event of data.events) {
     if (event.kind === "placed" || event.kind === "initialBubble") placedEvents.set(event.bubbleId, event);
     if (event.kind === "exploded") explodedEvents.set(event.bubbleId, event);
+    if (event.kind === "itemExposed") exposedItemEvents.set(event.position.y * data.size + event.position.x, event);
+    if (event.kind === "itemDestroyed" || event.kind === "itemPicked") removedItemEvents.set(event.position.y * data.size + event.position.x, event);
     if (event.kind === "crateDestroyed") destroyedTimes.set(event.position.y * data.size + event.position.x, number(event.tick));
   }
   if (target) { applyFrame(target, now); target = null; }
@@ -181,6 +238,17 @@ function draw(now: number): void {
         context.beginPath(); context.moveTo(px + cell * .18, py + cell * .2); context.lineTo(px + cell * .8, py + cell * .8); context.stroke();
       }
     }
+    // 只按服务端事件时间显示露出者；终点已被拾取的道具仍可在本轮前半段正确播放。
+    for (const [index, event] of exposedItemEvents) {
+      const removed = removedItemEvents.get(index);
+      if (number(event.tick) > logicalTime || (removed && number(removed.tick) <= logicalTime)) continue;
+      const x = origin + (event.position.x + 1.5) * cell, y = origin + (event.position.y + 1.5) * cell;
+      const icon = itemIcons[event.itemType];
+      if (icon?.complete && icon.naturalWidth > 0) context.drawImage(icon, x - cell * .47, y - cell * .47, cell * .94, cell * .94);
+    }
+    for (const e of scene.events) if ((e.kind === "attributeActivated" || e.kind === "itemPicked") && e.sequence > displayedAttributeSequence && number(e.tick) <= logicalTime) {
+      updateAttributeRow(e.playerId, e.attributes, e.pending); displayedAttributeSequence = e.sequence;
+    }
     for (const b of placedEvents.values()) {
       if (number(b.tick) > logicalTime || (explodedEvents.has(b.bubbleId) && number(explodedEvents.get(b.bubbleId)!.tick) <= logicalTime)) continue;
       const x = origin + (b.position.x + 1.5) * cell, y = origin + (b.position.y + 1.5) * cell;
@@ -220,4 +288,4 @@ function draw(now: number): void {
   requestAnimationFrame(draw);
 }
 
-resize(); connect(); requestAnimationFrame(draw);
+initializePlayerCards(); resize(); connect(); requestAnimationFrame(draw);

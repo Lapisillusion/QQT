@@ -1,0 +1,272 @@
+{
+  "name": "同刻两个玩家均拾取同一件道具",
+  "notes": [
+    "输入及预期在首次游戏运行前按规则、精确分数计算编写；随机分配独立使用标准 Random(42) 种子流计算。",
+    "同一核心驱动正式地图和独立环境；脚本完成不等于竞技终局。"
+  ],
+  "totalTicks": 1,
+  "items": {
+    "mode": "fixed",
+    "placements": [
+      {
+        "position": {
+          "x": 1,
+          "y": 0
+        },
+        "type": "vision"
+      }
+    ]
+  },
+  "initial": {
+    "map": "empty",
+    "players": [
+      {
+        "playerId": 1,
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "speed": 1,
+        "capacity": 3,
+        "range": 1,
+        "vision": 2,
+        "lifetime": 10
+      },
+      {
+        "playerId": 2,
+        "position": {
+          "x": 2,
+          "y": 0
+        },
+        "speed": 1,
+        "capacity": 3,
+        "range": 1,
+        "vision": 2,
+        "lifetime": 10
+      },
+      {
+        "playerId": 3,
+        "position": {
+          "x": 18,
+          "y": 20
+        },
+        "speed": 1,
+        "capacity": 3,
+        "range": 1,
+        "vision": 2,
+        "lifetime": 10
+      },
+      {
+        "playerId": 4,
+        "position": {
+          "x": 20,
+          "y": 18
+        },
+        "speed": 1,
+        "capacity": 3,
+        "range": 1,
+        "vision": 2,
+        "lifetime": 10
+      }
+    ],
+    "crates": [
+      {
+        "x": 1,
+        "y": 0
+      }
+    ],
+    "walls": [],
+    "bubbles": [
+      {
+        "ownerId": 4,
+        "position": {
+          "x": 1,
+          "y": 1
+        },
+        "dueAt": 0,
+        "placedAt": -10
+      }
+    ]
+  },
+  "rounds": [
+    {
+      "roundId": 1,
+      "actions": [
+        {
+          "playerId": 1,
+          "direction": "right",
+          "placements": []
+        },
+        {
+          "playerId": 2,
+          "direction": "left",
+          "placements": []
+        },
+        {
+          "playerId": 3,
+          "direction": "wait",
+          "placements": []
+        },
+        {
+          "playerId": 4,
+          "direction": "wait",
+          "placements": []
+        }
+      ]
+    }
+  ],
+  "expected": {
+    "players": [
+      {
+        "playerId": 1,
+        "position": {
+          "x": 1,
+          "y": 0
+        },
+        "point": {
+          "x": 1,
+          "y": 0
+        },
+        "deathTick": null,
+        "ownedBubblesAtDeath": 0,
+        "speed": 1,
+        "capacity": 3,
+        "range": 1,
+        "vision": 2,
+        "pending": {
+          "speed": 0,
+          "capacity": 0,
+          "range": 0,
+          "vision": 1
+        }
+      },
+      {
+        "playerId": 2,
+        "position": {
+          "x": 1,
+          "y": 0
+        },
+        "point": {
+          "x": 1,
+          "y": 0
+        },
+        "deathTick": null,
+        "ownedBubblesAtDeath": 0,
+        "speed": 1,
+        "capacity": 3,
+        "range": 1,
+        "vision": 2,
+        "pending": {
+          "speed": 0,
+          "capacity": 0,
+          "range": 0,
+          "vision": 1
+        }
+      },
+      {
+        "playerId": 3,
+        "position": {
+          "x": 18,
+          "y": 20
+        },
+        "point": {
+          "x": 18,
+          "y": 20
+        },
+        "deathTick": null,
+        "ownedBubblesAtDeath": 0,
+        "speed": 1,
+        "capacity": 3,
+        "range": 1,
+        "vision": 2,
+        "pending": {
+          "speed": 0,
+          "capacity": 0,
+          "range": 0,
+          "vision": 0
+        }
+      },
+      {
+        "playerId": 4,
+        "position": {
+          "x": 20,
+          "y": 18
+        },
+        "point": {
+          "x": 20,
+          "y": 18
+        },
+        "deathTick": null,
+        "ownedBubblesAtDeath": 0,
+        "speed": 1,
+        "capacity": 3,
+        "range": 1,
+        "vision": 2,
+        "pending": {
+          "speed": 0,
+          "capacity": 0,
+          "range": 0,
+          "vision": 0
+        }
+      }
+    ],
+    "bubbles": [
+      {
+        "ownerId": 4,
+        "position": {
+          "x": 1,
+          "y": 1
+        },
+        "dueAt": 0,
+        "placedAt": -10,
+        "id": 1,
+        "initial": true,
+        "explodedAt": 0,
+        "sourceBubbleId": null
+      }
+    ],
+    "destroyedCrates": [
+      {
+        "x": 1,
+        "y": 0
+      }
+    ],
+    "deadPlacementSkips": 0,
+    "ignoredDeadActions": 0,
+    "items": [
+      {
+        "position": {
+          "x": 1,
+          "y": 0
+        },
+        "type": "vision",
+        "status": "picked"
+      }
+    ],
+    "checkpoints": [],
+    "events": [
+      {
+        "kind": "itemPicked",
+        "count": 2,
+        "time": 1
+      },
+      {
+        "kind": "itemPicked",
+        "count": 1,
+        "time": 1,
+        "playerId": 1
+      },
+      {
+        "kind": "itemPicked",
+        "count": 1,
+        "time": 1,
+        "playerId": 2
+      },
+      {
+        "kind": "attributeActivated",
+        "count": 0
+      }
+    ],
+    "observations": []
+  }
+}

@@ -5,9 +5,10 @@ namespace QQT.Server;
 /// <summary>Core 只产生值事件；宿主将同一事件映射到分类诊断日志。</summary>
 public sealed partial class SimulationLogger
 {
-    private readonly ILogger _tick, _movement, _bubble, _explosion, _map, _script, _death, _match;
+    private readonly ILogger _tick, _movement, _bubble, _explosion, _map, _script, _death, _match, _item;
     public SimulationLogger(ILoggerFactory factory)
     {
+        _item = factory.CreateLogger("QQT.Simulation.Tick.Item");
         _tick = factory.CreateLogger("QQT.Simulation.Tick");
         _movement = factory.CreateLogger("QQT.Simulation.Tick.Movement");
         _bubble = factory.CreateLogger("QQT.Simulation.Tick.Bubble");
@@ -25,6 +26,12 @@ public sealed partial class SimulationLogger
     {
         switch (e.Kind)
         {
+            case EventKind.ItemGenerated:
+                Generated(_item, runId, e.Position.X, e.Position.Y, ItemNames.Name(e.ItemType)); break;
+            case EventKind.ItemExposed: case EventKind.ItemDestroyed: case EventKind.ItemPicked: case EventKind.AttributeActivated:
+                int after = e.Kind == EventKind.ItemPicked ? e.Pending.Get(e.ItemType) : e.Value;
+                int before = e.Kind == EventKind.ItemPicked ? after - 1 : e.PreviousValue;
+                ItemChanged(_item, runId, e.RoundId, e.Tick, e.Phase, e.Kind, e.PlayerId, e.Position.X, e.Position.Y, ItemNames.Name(e.ItemType), before, after); break;
             case EventKind.Entered: case EventKind.ReturnStarted: case EventKind.Returned:
                 MovementPhase(_movement, runId, e.Tick, e.PlayerId, e.Kind == EventKind.Entered ? "Entered" : e.Kind == EventKind.ReturnStarted ? "ReturnStarted" : "Returned", e.Position.X, e.Position.Y, e.Point.X, e.Point.Y); break;
             case EventKind.State: break;
@@ -54,8 +61,30 @@ public sealed partial class SimulationLogger
         DeathValidation(_script, runId, result.DeadPlayers, result.Deaths, result.PlayersMatch, result.BubblesMatch, result.ActionsMatch);
         foreach (var bubble in world.Bubbles) FinalBubble(_script, runId, bubble.Id, bubble.OwnerId, bubble.Position.X, bubble.Position.Y, bubble.PlacedAt, bubble.DueAt);
         OutcomeValidation(_script, runId, world.Ended, world.WinnerId, world.EndTick, result.OutcomeMatches);
+        ItemValidation(_script, runId, result.ItemsMatch, result.AttributesMatch, result.ObservationsMatch);
+        foreach (var p in world.Players) FinalAttributes(_script, runId, p.Id, p.Speed, p.Capacity, p.Range, p.Vision, p.Pending.Speed, p.Pending.Capacity, p.Pending.Range, p.Pending.Vision);
+        for (int i = 0; i < GameSimulation.CellCount; i++) if (world.Items[i].Type != ItemType.None)
+            FinalItem(_item, runId, i % GameSimulation.Size, i / GameSimulation.Size, ItemNames.Name(world.Items[i].Type), world.Items[i].Status);
         if (!result.Passed) Failed(_script, runId);
     }
+
+    public void ItemsConfigured(string runId, GameSimulation world)
+    {
+        for (var type = ItemType.Speed; type <= ItemType.Vision; type++)
+            Allocation(_item, runId, world.ItemMode, world.ItemSeed, ItemNames.Name(type), world.RequestedItems.Get(type), world.GeneratedItems.Get(type), world.RequestedItems.Get(type) - world.GeneratedItems.Get(type));
+    }
+    [LoggerMessage(900, LogLevel.Debug, "ITEM_GENERATED RunId={RunId} Position=({X},{Y}) Type={Type}")]
+    private static partial void Generated(ILogger logger, string runId, int x, int y, string type);
+    [LoggerMessage(901, LogLevel.Information, "ITEM_EVENT RunId={RunId} RoundId={RoundId} Time={Time} Phase={Phase} Kind={Kind} PlayerId={PlayerId} Position=({X},{Y}) Type={Type} Before={Before} After={After}")]
+    private static partial void ItemChanged(ILogger logger, string runId, int roundId, RationalTime time, SimulationPhase phase, EventKind kind, int playerId, int x, int y, string type, int before, int after);
+    [LoggerMessage(902, LogLevel.Information, "ITEM_ALLOCATION RunId={RunId} Mode={Mode} Seed={Seed} Type={Type} Requested={Requested} Generated={Generated} Skipped={Skipped}")]
+    private static partial void Allocation(ILogger logger, string runId, string mode, int? seed, string type, int requested, int generated, int skipped);
+    [LoggerMessage(903, LogLevel.Information, "ITEM_VALIDATION RunId={RunId} ItemsMatch={ItemsMatch} AttributesMatch={AttributesMatch} ObservationsMatch={ObservationsMatch}")]
+    private static partial void ItemValidation(ILogger logger, string runId, bool itemsMatch, bool attributesMatch, bool observationsMatch);
+    [LoggerMessage(904, LogLevel.Information, "FINAL_ATTRIBUTES RunId={RunId} PlayerId={PlayerId} Speed={Speed} Capacity={Capacity} Range={Range} Vision={Vision} PendingSpeed={PendingSpeed} PendingCapacity={PendingCapacity} PendingRange={PendingRange} PendingVision={PendingVision}")]
+    private static partial void FinalAttributes(ILogger logger, string runId, int playerId, int speed, int capacity, int range, int vision, int pendingSpeed, int pendingCapacity, int pendingRange, int pendingVision);
+    [LoggerMessage(905, LogLevel.Information, "FINAL_ITEM RunId={RunId} Position=({X},{Y}) Type={Type} Status={Status}")]
+    private static partial void FinalItem(ILogger logger, string runId, int x, int y, string type, ItemStatus status);
 
     [LoggerMessage(100, LogLevel.Information, "SCENARIO_START RunId={RunId} Name={Name}")]
     private static partial void ScriptStarted(ILogger logger, string runId, string name);

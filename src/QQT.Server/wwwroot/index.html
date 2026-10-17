@@ -16,7 +16,7 @@
       <div class="board-panel">
         <div class="panel-heading"><span><i class="live-dot"></i> 全局场景</span><span>21 × 21 · 场景地图</span></div>
         <div class="canvas-wrap"><canvas id="map" aria-label="四人泡泡场景地图"></canvas></div>
-        <div class="legend"><span><i class="wall"></i>硬墙</span><span><i class="crate"></i>箱子</span><span><i class="bubble"></i>泡泡</span><span>角色上的数字为玩家编号</span></div>
+        <div class="legend"><span><img src="/icons/item-speed.svg" alt="">移速 +1</span><span><img src="/icons/item-range.svg" alt="">火力 +1</span><span><img src="/icons/item-capacity.svg" alt="">泡泡容量 +1</span><span><img src="/icons/item-vision.svg" alt="">视野半径 +1</span><span><i class="wall"></i>硬墙</span><span><i class="crate"></i>箱子</span><span><i class="bubble"></i>泡泡</span><span>角色上的数字为玩家编号</span></div>
       </div>
       <aside>
         <section class="status-panel">
@@ -25,6 +25,9 @@
           <div class="progress"><div id="progress"></div></div>
           <div class="metrics"><div><strong id="bubbles">0</strong><span>在场泡泡</span></div><div><strong id="crates">329</strong><span>剩余箱子</span></div><div><strong id="safe">4</strong><span>存活玩家</span></div></div>
           <p id="result" class="result">运行后按脚本预期核对位置、死亡时刻和泡泡处理。</p>
+        </section>
+        <section class="status-panel player-panel" aria-labelledby="player-panel-title">
+          <div class="panel-heading"><span id="player-panel-title">玩家实时属性</span><span>增益下一轮生效</span></div>
           <div id="players" class="players"></div>
         </section>
         <section class="log-panel">

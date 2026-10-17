@@ -9,13 +9,14 @@ using QQT.Core;
 namespace QQT.Server;
 
 /// <summary>唯一推进世界的任务。快照在锁内序列化，锁外只发送独立缓冲。</summary>
-public sealed class ScenarioRunner : IAsyncDisposable
+public sealed partial class ScenarioRunner : IAsyncDisposable
 {
     private readonly GameSimulation _world = new();
     private SimulationEvent[] _history;
     private readonly ConcurrentDictionary<int, UiPeer> _peers = new();
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly ScenarioOptions _options;
+    private readonly IConfiguration _configuration;
     private readonly SimulationLogger _log;
     private readonly ObjectPool<JsonMessageBuffer> _messages;
     private readonly CancellationToken _stopping;
@@ -26,9 +27,9 @@ public sealed class ScenarioRunner : IAsyncDisposable
     private string _runId = "ready", _status = "ready", _error = "";
     private ValidationResult? _result;
 
-    public ScenarioRunner(ScenarioOptions options, SimulationLogger log, ObjectPool<JsonMessageBuffer> messages, IHostApplicationLifetime lifetime)
+    public ScenarioRunner(ScenarioOptions options, SimulationLogger log, ObjectPool<JsonMessageBuffer> messages, IHostApplicationLifetime lifetime, IConfiguration configuration)
     {
-        _options = options; _log = log; _messages = messages; _stopping = lifetime.ApplicationStopping;
+        _configuration = configuration; _options = options; _log = log; _messages = messages; _stopping = lifetime.ApplicationStopping;
         // 事件量取决于速度与连锁，按实际需要扩容；初始容量不作为事件上限。
         // 本 runner 唯一持有历史数组，跨重跑复用，仅在任务和发送完成后的 DisposeAsync 归还。
         _history = ArrayPool<SimulationEvent>.Shared.Rent(GameSimulation.InitialEventCapacity);
@@ -79,9 +80,10 @@ public sealed class ScenarioRunner : IAsyncDisposable
         {
             using var script = ScenarioScript.Load(_options.ScriptPath, _options.MaxScriptTicks);
             await _gate.WaitAsync(_stopping);
-            try { _totalTicks = script.TotalTicks; _scenarioName = script.Name; if (script.Initial is { } initial) _world.Configure(initial); StoreAndLogEvents(); }
+            try { _totalTicks = script.TotalTicks; _scenarioName = script.Name; if (script.Initial is { } initial) _world.Configure(initial); ConfigureWorldItems(script); StoreAndLogEvents(); }
             finally { _gate.Release(); }
             _log.Started(_runId, script.Name);
+            _log.ItemsConfigured(_runId, _world);
             await PublishAsync(false);
             long previousStart = 0;
             for (int tick = 1; tick <= script.TotalTicks; tick++)
@@ -96,6 +98,8 @@ public sealed class ScenarioRunner : IAsyncDisposable
                 try
                 {
                     _log.TickStarted(_runId, tick);
+                    _world.PrepareRound();
+                    _world.ValidateObservations(script.Expected);
                     _world.Advance(script.Round(tick));
                     StoreAndLogEvents();
                     _log.TickEnded(_runId, _world);
@@ -178,9 +182,9 @@ public sealed class ScenarioRunner : IAsyncDisposable
         {
             w.WriteStartObject(); w.WriteNumber("id", p.Id); WritePosition(w, "position", p.Position); w.WriteBoolean("hit", p.Hit); w.WriteBoolean("alive", p.Alive);
             if (p.DeathTick is { } diedAt) WriteTime(w, "deathTick", diedAt); else w.WriteNull("deathTick");
-            WritePoint(w, "point", p.Point); w.WriteNumber("speed", p.Speed); w.WriteNumber("capacity", p.Capacity); w.WriteNumber("range", p.Range); WriteTime(w, "lifetime", p.Lifetime); w.WriteEndObject();
+            WritePoint(w, "point", p.Point); w.WriteNumber("speed", p.Speed); w.WriteNumber("capacity", p.Capacity); w.WriteNumber("range", p.Range); WriteTime(w, "lifetime", p.Lifetime); w.WriteNumber("vision", p.Vision); WriteGains(w, "pending", p.Pending); w.WriteEndObject();
         }
-        w.WriteEndArray(); w.WriteStartArray("bubbles");
+        w.WriteEndArray(); WriteItems(w); w.WriteStartArray("bubbles");
         foreach (var b in _world.Bubbles)
         {
             w.WriteStartObject(); w.WriteNumber("id", b.Id); w.WriteNumber("ownerId", b.OwnerId); WritePosition(w, "position", b.Position);
@@ -197,6 +201,8 @@ public sealed class ScenarioRunner : IAsyncDisposable
             var e = _history[i]; w.WriteStartObject(); w.WriteNumber("sequence", i + 1); w.WriteString("kind", EventName(e.Kind));
             WriteTime(w, "tick", e.Tick); w.WriteNumber("roundId", e.RoundId); WritePoint(w, "point", e.Point); WriteTime(w, "relatedTime", e.RelatedTime); w.WriteNumber("playerId", e.PlayerId); w.WriteNumber("bubbleId", e.BubbleId);
             WritePosition(w, "position", e.Position); WritePosition(w, "from", e.From); w.WriteBoolean("success", e.Success);
+            w.WriteString("itemType", ItemNames.Name(e.ItemType)); w.WriteNumber("previousValue", e.PreviousValue);
+            w.WriteString("phase", e.Phase switch { SimulationPhase.Initialization => "initialization", SimulationPhase.RoundStart => "roundStart", _ => "execution" }); WriteAttributes(w, e.Attributes); WriteGains(w, "pending", e.Pending);
             w.WriteNumber("value", e.Value); w.WriteString("reason", e.Reason switch { SkipReason.Dead => "dead", SkipReason.NotReached => "notReached", SkipReason.Capacity => "capacity", _ => "none" }); w.WriteEndObject();
         }
         w.WriteEndArray();
@@ -205,7 +211,7 @@ public sealed class ScenarioRunner : IAsyncDisposable
             w.WriteStartObject("result"); w.WriteBoolean("passed", r.Passed); w.WriteNumber("safePlayers", r.SafePlayers);
             w.WriteNumber("walls", r.Walls); w.WriteNumber("placed", r.Placed); w.WriteNumber("exploded", r.Exploded);
             w.WriteNumber("destroyed", r.Destroyed); w.WriteBoolean("mapMatches", r.MapMatches); w.WriteNumber("deadPlayers", r.DeadPlayers);
-            w.WriteNumber("deaths", r.Deaths); w.WriteBoolean("playersMatch", r.PlayersMatch); w.WriteBoolean("bubblesMatch", r.BubblesMatch); w.WriteBoolean("actionsMatch", r.ActionsMatch); w.WriteBoolean("outcomeMatches", r.OutcomeMatches); w.WriteEndObject();
+            w.WriteNumber("deaths", r.Deaths); w.WriteBoolean("playersMatch", r.PlayersMatch); w.WriteBoolean("bubblesMatch", r.BubblesMatch); w.WriteBoolean("actionsMatch", r.ActionsMatch); w.WriteBoolean("outcomeMatches", r.OutcomeMatches); w.WriteBoolean("itemsMatch", r.ItemsMatch); w.WriteBoolean("attributesMatch", r.AttributesMatch); w.WriteBoolean("observationsMatch", r.ObservationsMatch); w.WriteEndObject();
         }
         w.WriteEndObject(); w.Flush();
     }
@@ -220,6 +226,8 @@ public sealed class ScenarioRunner : IAsyncDisposable
     }
     private static string EventName(EventKind kind) => kind switch
     {
+        EventKind.ItemGenerated => "itemGenerated", EventKind.ItemExposed => "itemExposed", EventKind.ItemDestroyed => "itemDestroyed",
+        EventKind.ItemPicked => "itemPicked", EventKind.AttributeActivated => "attributeActivated",
         EventKind.State => "state", EventKind.InitialBubble => "initialBubble", EventKind.Entered => "entered", EventKind.ReturnStarted => "returnStarted", EventKind.Returned => "returned", EventKind.Move => "move", EventKind.Blocked => "blocked", EventKind.Placed => "placed",
         EventKind.Exploded => "exploded", EventKind.Covered => "covered", EventKind.CrateDestroyed => "crateDestroyed",
         EventKind.Chained => "chained", EventKind.MatchEnded => "matchEnded",

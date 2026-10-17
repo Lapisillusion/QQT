@@ -3,6 +3,6 @@
     <ProjectReference Include="../QQT.Core/QQT.Core.csproj" />
     <Content Update="wwwroot/**" CopyToOutputDirectory="PreserveNewest" />
     <Content Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
-    <Content Include="../../scripts/*.json" Link="scripts/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="../../scripts/**/*.json" Link="scripts/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
