@@ -10,16 +10,28 @@ public static class Program
     public static async Task<int> Main(string[] args)
     {
         bool verify = false, battle = false;
-        string? scriptOverride = null;
+        string? scriptOverride = null, configOverride = null;
         for (int i = 0; i < args.Length; i++)
         {
             if (args[i] == "--verify") verify = true;
             else if (args[i] == "--battle") battle = true;
             else if (args[i] == "--script" && i + 1 < args.Length) scriptOverride = Path.GetFullPath(args[++i]);
+            else if (args[i] == "--config" && i + 1 < args.Length) configOverride = Path.GetFullPath(args[++i]);
             else throw new ArgumentException($"不支持的参数：{args[i]}");
         }
-        var builder = WebApplication.CreateBuilder(new WebApplicationOptions { ContentRootPath = AppContext.BaseDirectory });
-        var options = ScenarioOptions.Load(builder.Configuration, scriptOverride);
+        if (verify && battle) throw new ArgumentException("--verify 与 --battle 不能同时使用。");
+        var source = new ServerConfiguration(configOverride ?? Path.Combine(AppContext.BaseDirectory, "appsettings.json"), scriptOverride);
+        using var startup = source.Read();
+        var builder = WebApplication.CreateEmptyBuilder(new WebApplicationOptions
+        { ContentRootPath = AppContext.BaseDirectory, WebRootPath = Path.Combine(AppContext.BaseDirectory, "wwwroot") });
+        // 指定文件替代默认 JSON，不再叠加环境文件或环境变量形成隐含覆盖。
+        builder.Configuration.Sources.Clear();
+        builder.Configuration.AddJsonFile(source.Path, optional: false, reloadOnChange: false);
+        builder.WebHost.UseKestrel().UseUrls(startup.Urls);
+        builder.Services.AddRouting();
+        builder.Logging.AddConfiguration(builder.Configuration.GetSection("Logging")).AddConsole();
+        var options = startup.Scenario;
+        builder.Services.AddSingleton(source);
         builder.Services.AddSingleton(options);
         builder.Services.AddSingleton<SimulationLogger>();
         builder.Services.AddSingleton<ObjectPoolProvider>(_ => new DefaultObjectPoolProvider { MaximumRetained = options.MessagePoolRetained });
@@ -37,7 +49,7 @@ public static class Program
             app.Map("/ws/ai", context => HandleBattleAsync(context, false));
         }
         else app.Map("/ws/ui", HandleUiAsync);
-        app.Logger.LogInformation("M0 ready: open {Address}; script={ScriptPath}", builder.Configuration["Urls"], options.ScriptPath);
+        app.Logger.LogInformation("SERVER_READY ConfigPath={ConfigPath} Address={Address} ScriptPath={ScriptPath}", source.Path, startup.Urls, options.ScriptPath);
         await app.RunAsync();
         return 0;
     }
@@ -50,7 +62,7 @@ public static class Program
         var options = context.RequestServices.GetRequiredService<ScenarioOptions>();
         var log = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger(ui ? "QQT.Transport.Ui" : "QQT.Transport.Ai");
         using var socket = await context.WebSockets.AcceptWebSocketAsync();
-        await using var peer = new BattlePeer(socket, pool, ui, coordinator.Closed);
+        await using var peer = new BattlePeer(socket, pool, ui, coordinator.Closed, options.OutgoingQueueCapacity);
         var receive = ArrayPool<byte>.Shared.Rent(options.ReceiveBufferBytes);
         coordinator.Attach(peer);
         try

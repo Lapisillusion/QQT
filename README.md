@@ -23,7 +23,7 @@ dotnet run --project src/QQT.Server/QQT.Server.csproj
 
 ## 联机对战
 
-构建UI后以 `dotnet run --project src/QQT.Server -- --battle` 启动，页面选择2／3／4人、逐帧开关及可选种子并创建；满员后UI手动开始。逐帧时点击“tick演示”才开启该轮观察、决策与模拟。AI连接 `/ws/ai`，每轮可查询冻结详情并提交唯一锁定计划，开局后掉线淘汰，最多500 tick。
+构建UI后以 `dotnet run --project src/QQT.Server -- --battle` 启动，页面选择2／3／4人、逐帧开关及可选种子并创建；满员后UI手动开始。逐帧时点击“tick演示”才开启该轮观察、决策与模拟。AI连接 `/ws/ai`，每轮可查询冻结详情并提交唯一锁定计划，开局后掉线淘汰，默认最多500 tick，可由 Match.MaxTicks 配置。
 
 完整验收入口：
 
@@ -44,7 +44,7 @@ dotnet run --project src/QQT.Server/QQT.Server.csproj
 - [TODO.md](TODO.md)：未指定工程配置的合法初值和后续范围。
 - [AGENTS.md](AGENTS.md)：日志、池化、注释和关键路径验收规范。
 
-构建时脚本、配置和前端复制到输出目录。服务端从该目录读取资源，每次运行重新读取脚本；修改源脚本或源配置后，停止当前服务再构建／启动。不指定 initial 时沿用正式固定地图与默认参数；指定 initial 可运行空地图和自定义出生点、正整数速度、容量、范围、分数寿命的测试环境。另支持视野参数和道具配置。联机对战模式已支持 AI 协议和竞技500 tick上限；旧脚本模式仍以脚本轮数和自身expected验收。
+构建时脚本、配置和前端复制到输出目录。默认读取输出目录 appsettings.json，可用 --config 指定完整替代文件；文件内相对路径统一以配置文件目录解析。每次建局／重跑重新读取并冻结本局参数，监听、日志与网络缓冲修改需重启。详见 [统一配置说明](docs/config/服务端配置说明.md)。不指定 initial 时沿用正式固定地图与默认参数；指定 initial 可运行空地图和自定义出生点、正整数速度、容量、范围、分数寿命的测试环境。另支持视野参数和道具配置。联机和旧脚本共用配置的竞技上限，默认500 tick；旧脚本另受 totalTicks 和 MaxScriptTicks 约束，并核对自身expected。
 
 ## 日志验收
 

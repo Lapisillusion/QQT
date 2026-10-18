@@ -24,7 +24,7 @@ public sealed class ScenarioScript : IDisposable
         catch { ArrayPool<PlayerAction>.Shared.Return(_actions, true); _actions = null; throw; }
     }
 
-    public static ScenarioScript Load(string path, int maxTicks)
+    public static ScenarioScript Load(string path, int maxTicks, int defaultPlayerCount)
     {
         using var stream = File.OpenRead(path);
         var document = JsonDocument.Parse(stream);
@@ -35,7 +35,7 @@ public sealed class ScenarioScript : IDisposable
             int totalTicks = root.GetProperty("totalTicks").GetInt32();
             if (totalTicks < 1 || totalTicks > maxTicks)
                 throw new InvalidDataException($"脚本轮数必须在 1~{maxTicks} 之间。");
-            int playerCount = root.TryGetProperty("playerCount", out var n) ? n.GetInt32() : 4;
+            int playerCount = root.TryGetProperty("playerCount", out var n) ? n.GetInt32() : defaultPlayerCount;
             if (playerCount is < 2 or > 4) throw new InvalidDataException("脚本人数必须在 2~4 之间。");
             script = new ScenarioScript(totalTicks, playerCount) { _document = document };
             script._actions!.AsSpan(0, totalTicks * playerCount).Clear();

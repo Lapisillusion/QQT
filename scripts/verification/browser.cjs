@@ -19,9 +19,13 @@ fs.mkdirSync(output, { recursive: true });
 (async () => {
   let browser, runner;
   const serverLog = fs.openSync(path.join(output, 'server.log'), 'w');
-  const server = spawn('dotnet', ['src/QQT.Server/bin/Debug/net10.0/QQT.Server.dll', '--battle'], {
-    cwd: root, windowsHide: true, stdio: ['ignore', serverLog, serverLog],
-    env: { ...process.env, Urls: url, Battle__RecordDirectory: path.join(output, 'server-jsonl') }
+  const config = JSON.parse(fs.readFileSync(path.join(root, 'src/QQT.Server/appsettings.json'), 'utf8'));
+  config.Urls = url; config.Battle.RecordDirectory = path.join(output, 'server-jsonl');
+  config.Match.PlayerCount = 3; config.Match.ManualTickAdvance = true; config.Match.Seed = 73;
+  config.Scenario.ScriptPath = path.join(root, 'scripts/m0.json');
+  const configPath = path.join(output, 'server.config.json'); fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+  const server = spawn('dotnet', ['src/QQT.Server/bin/Debug/net10.0/QQT.Server.dll', '--battle', '--config', configPath], {
+    cwd: root, windowsHide: true, stdio: ['ignore', serverLog, serverLog]
   });
   const report = { status: 'running', browser: executable, checks: [], errors: [] };
   try {
@@ -32,9 +36,20 @@ fs.mkdirSync(output, { recursive: true });
     }
     browser = await playwright.chromium.launch({ executablePath: executable, headless: true });
     const page = await browser.newPage({ viewport: { width: 1440, height: 1080 }, deviceScaleFactor: 1 });
+    // 只在验收页面持有真实 UI socket，末尾重送实际比赛帧验证播放队列，不新增竞技对局。
+    await page.addInitScript(() => {
+      const Native = window.WebSocket;
+      window.WebSocket = class extends Native {
+        constructor(...args) { super(...args); window.__qqtUiSocket = this; }
+      };
+    });
     page.on('pageerror', error => report.errors.push(String(error)));
     await page.goto(url);
     await page.locator('#battle-controls').waitFor({ state: 'visible' });
+    assert(await page.locator('#player-count').inputValue() === '3', 'configured default player count');
+    assert(await page.locator('#manual-tick').isChecked(), 'configured default manual mode');
+    assert(await page.locator('#spawn-seed').inputValue() === '73', 'configured default seed');
+    report.configurationDefaults = { playerCount: 3, manualTickAdvance: true, seed: 73 };
     runner = spawn('python', ['scripts/verification/battle.py', '--only', 'browser', '--external-server', '--output', output], {
       cwd: root, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe']
     });
@@ -88,6 +103,22 @@ fs.mkdirSync(output, { recursive: true });
     const code = await new Promise(resolve => runner.exitCode !== null ? resolve(runner.exitCode) : runner.once('exit', resolve));
     assert(code === 0, 'browser script clients failed');
     assert(report.checks.length === 4 && report.errors.length === 0, 'browser checks incomplete or JavaScript error');
+    const records = fs.readdirSync(path.join(output, 'server-jsonl')).map(name =>
+      fs.readFileSync(path.join(output, 'server-jsonl', name), 'utf8').trim().split('\n').map(line => JSON.parse(line)));
+    const rows = records.find(game => game.some(r => r.recordType === 'uiFrame' && r.message.tick === 9));
+    const frames = [0,1,2,3,4].map(tick => rows.find(r => r.recordType === 'uiFrame' && r.message.tick === tick).message);
+    await page.evaluate(frames => {
+      const send = (frame, runId, speed) => window.__qqtUiSocket.dispatchEvent(new MessageEvent('message', {
+        data: JSON.stringify({...frame, runId, animate: frame.tick > 0, durationMs: 4000, catchUpThreshold: 3, playbackSpeed: speed})
+      }));
+      frames.slice(0,4).forEach(frame => send(frame, 'configuration-queue', 1));
+      if (document.querySelector('#tick').textContent !== '0') throw new Error('catch-up counted current animation as queued');
+      send(frames[4], 'configuration-queue', 1);
+      if (document.querySelector('#tick').textContent !== '4') throw new Error('catch-up did not jump at configured threshold');
+      send(frames[0], 'configuration-speed', 20); send(frames[1], 'configuration-speed', 20);
+    }, frames);
+    await page.waitForFunction(() => document.querySelector('#tick').textContent === '1', null, {timeout: 1500});
+    report.playbackConfiguration = { catchUpThreshold: 3, queuedExcludesCurrent: true, playbackSpeed: 20, source: 'recorded-real-match-frames' };
     report.status = 'passed';
   } catch (error) {
     report.status = 'failed'; report.firstDifference = String(error); console.error(error); process.exitCode = 1;

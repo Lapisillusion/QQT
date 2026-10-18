@@ -18,6 +18,7 @@ if (-not $SkipBuild) {
     Invoke-Checked "dotnet" @("build", "QQT.sln")
 }
 New-Item -ItemType Directory -Force -Path $Output | Out-Null
+Invoke-Checked "python" @("scripts/verification/configuration.py", "--output", "$Output/configuration")
 Invoke-Checked "python" @("scripts/verification/battle.py", "--only", "all", "--output", "$Output/network")
 Invoke-Checked "python" @("scripts/verification/battle.py", "--only", "limit", "--tick-interval", "1", "--url", "ws://127.0.0.1:5081", "--output", "$Output/limit")
 Invoke-Checked "dotnet" @("src/QQT.Battle.Checks/bin/Debug/net10.0/QQT.Battle.Checks.dll", $taskRoot, (Join-Path $taskRoot "$Output/simulation-boundary"))

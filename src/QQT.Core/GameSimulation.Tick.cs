@@ -9,7 +9,7 @@ public sealed partial class GameSimulation
     private bool _executing, _firstBatch;
     private RationalTime _tickEnd;
     public bool IsExecuting => _executing;
-    public int TickLimit { get; set; } = int.MaxValue;
+    public int TickLimit { get; set; }
 
     public void BeginTick(ReadOnlySpan<PlayerAction> plans)
     {

@@ -9,7 +9,7 @@ public sealed class BattlePeer : IAsyncDisposable
 {
     private readonly WebSocket _socket;
     private readonly ObjectPool<JsonMessageBuffer> _pool;
-    private readonly Channel<JsonMessageBuffer> _outgoing = Channel.CreateBounded<JsonMessageBuffer>(64);
+    private readonly Channel<JsonMessageBuffer> _outgoing;
     private readonly Action<BattlePeer> _closed;
     private readonly Task _sending;
     private int _stopped;
@@ -17,9 +17,10 @@ public sealed class BattlePeer : IAsyncDisposable
     public string GameId { get; set; } = "";
     public bool IsUi { get; }
 
-    public BattlePeer(WebSocket socket, ObjectPool<JsonMessageBuffer> pool, bool isUi, Action<BattlePeer> closed)
+    public BattlePeer(WebSocket socket, ObjectPool<JsonMessageBuffer> pool, bool isUi, Action<BattlePeer> closed, int queueCapacity)
     {
         _socket = socket; _pool = pool; IsUi = isUi; _closed = closed;
+        _outgoing = Channel.CreateBounded<JsonMessageBuffer>(queueCapacity);
         _sending = SendLoopAsync();
     }
     // 所有权无条件转移；入队失败也由本方法归还。

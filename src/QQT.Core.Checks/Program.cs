@@ -21,7 +21,7 @@ static partial class Program
 
     private static void CheckRays()
     {
-        using var world = new GameSimulation();
+        using var world = new GameSimulation(new(1, 3, 1, 2, 3), 96, 4, int.MaxValue);
         var terrain = (Cell[])Field("_terrain").GetValue(world)!;
         terrain.AsSpan(0, GameSimulation.CellCount).Clear();
         terrain[new Position(3, 0).Index] = Cell.Crate;
@@ -66,8 +66,8 @@ static partial class Program
 
     private static void CheckTermination(string path)
     {
-        using var script = ScenarioScript.Load(path, 8);
-        using var world = new GameSimulation();
+        using var script = ScenarioScript.Load(path, 8, 4);
+        using var world = new GameSimulation(new(1, 3, 1, 2, 3), 96, 4, int.MaxValue);
         for (int tick = 1; tick <= 3; tick++) world.Advance(script.Round(tick));
         // 合成夹具仅打开 A19，让胜者可以在 t=4 到达安全终点并请求放置。
         // 正式地图下此格是箱子，主脚本因此无法区分存活者的终点放置取消。

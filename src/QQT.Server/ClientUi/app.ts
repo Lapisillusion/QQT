@@ -9,7 +9,7 @@ type Player = { id: number; position: Position; hit: boolean; alive: boolean; de
 type Bubble = { id: number; ownerId: number; position: Position; dueAt: Fraction };
 type Move = { playerId: number; from: ExactPosition; to: ExactPosition; start: Fraction; end: Fraction };
 type GameEvent = { sequence: number; kind: string; tick: Fraction; relatedTime: Fraction; point: ExactPosition; roundId: number; playerId: number; bubbleId: number; position: Position; from: Position; success: boolean; value: number; reason: string; itemType: string; previousValue: number; attributes: ItemGains; pending: ItemGains; phase: string };
-type Frame = { type: "frame"; runId: string; name: string; totalTicks: number; status: string; error: string; tick: number; size: number; time: Fraction; durationMs: number; animate: boolean; terrain: number[]; items: GroundItem[]; players: Player[]; bubbles: Bubble[]; moves: Move[]; events: GameEvent[]; crateCount: number; bubbleCount: number; ended: boolean; winnerId: number | null; endTick: Fraction | null; result?: { passed: boolean; safePlayers: number; walls: number; placed: number; exploded: number; destroyed: number; mapMatches: boolean; deadPlayers: number; deaths: number } };
+type Frame = { type: "frame"; runId: string; name: string; totalTicks: number; status: string; error: string; tick: number; size: number; time: Fraction; durationMs: number; catchUpThreshold: number; playbackSpeed: number; animate: boolean; terrain: number[]; items: GroundItem[]; players: Player[]; bubbles: Bubble[]; moves: Move[]; events: GameEvent[]; crateCount: number; bubbleCount: number; ended: boolean; winnerId: number | null; endTick: Fraction | null; result?: { passed: boolean; safePlayers: number; walls: number; placed: number; exploded: number; destroyed: number; mapMatches: boolean; deadPlayers: number; deaths: number } };
 
 function element<T extends HTMLElement>(id: string): T { return document.getElementById(id) as T; }
 const canvas = element<HTMLCanvasElement>("map");
@@ -17,7 +17,7 @@ const context = canvas.getContext("2d")!;
 const start = element<HTMLButtonElement>("start");
 const demonstrate = element<HTMLButtonElement>("demonstrate");
 const createMatch = element<HTMLButtonElement>("create-match");
-type Session = { type: "session.state"; gameId: string; payload: { phase: string; playerCount: number; registeredCount: number; manualTickAdvance: boolean; seed: number; nextRoundId: number; canStart: boolean; canDemonstrate: boolean; waitingPlayerIds: number[] } };
+type Session = { type: "session.state"; gameId: string; payload: { phase: string; playerCount: number; registeredCount: number; manualTickAdvance: boolean; seed: number; nextRoundId: number; canStart: boolean; canDemonstrate: boolean; waitingPlayerIds: number[]; defaults: {playerCount: number; manualTickAdvance: boolean; seed: number | null} } };
 let session: Session | null = null;
 const connection = element("connection");
 const status = element("status");
@@ -56,6 +56,12 @@ function exact(value: Fraction): string { return value.denominator === 1 ? Strin
 let socket: WebSocket | null = null;
 let current: Frame | null = null;
 let target: Frame | null = null;
+// 页面生命周期持有队列；只计尚未开始播放的完整轮，不计 target 当前动画。
+const pendingFrames: Frame[] = [];
+let playerOverride = false, manualOverride = false, seedOverride = false;
+element("player-count").addEventListener("change", () => { playerOverride = true; });
+element("manual-tick").addEventListener("change", () => { manualOverride = true; });
+element("spawn-seed").addEventListener("input", () => { seedOverride = true; });
 let animationStart = 0;
 let flashStart = -10000;
 let loggedSequence = 0;
@@ -189,9 +195,21 @@ function receive(message: MessageEvent<string>): void {
     if (event.kind === "itemDestroyed" || event.kind === "itemPicked") removedItemEvents.set(event.position.y * data.size + event.position.x, event);
     if (event.kind === "crateDestroyed") destroyedTimes.set(event.position.y * data.size + event.position.x, number(event.tick));
   }
-  if (target) { applyFrame(target, now); target = null; }
+  if (current?.runId !== data.runId || !data.animate) {
+    pendingFrames.length = 0; target = null; applyFrame(data, now); return;
+  }
+  if (target) {
+    pendingFrames.push(data);
+    if (pendingFrames.length >= data.catchUpThreshold) { pendingFrames.length = 0; target = null; applyFrame(data, now); }
+    return;
+  }
+  startFrame(data, now);
+}
+
+function startFrame(data: Frame, now: number): void {
   if (data.animate && current?.runId === data.runId && data.tick === current.tick + 1) {
     target = data; animationStart = now; start.disabled = true; status.textContent = "验证进行中";
+    if (session) renderSession();
   } else { target = null; applyFrame(data, now); }
 }
 
@@ -209,6 +227,9 @@ start.addEventListener("click", () => {
 
 function renderSession(): void {
   const s = session!; const p = s.payload;
+  if (!playerOverride) element<HTMLSelectElement>("player-count").value = String(p.defaults.playerCount);
+  if (!manualOverride) element<HTMLInputElement>("manual-tick").checked = p.defaults.manualTickAdvance;
+  if (!seedOverride) element<HTMLInputElement>("spawn-seed").value = p.defaults.seed === null ? "" : String(p.defaults.seed);
   element("battle-controls").hidden = false;
   element("seats").textContent = `${p.registeredCount}/${p.playerCount} 已登记`;
   start.textContent = "开始对战"; start.disabled = !p.canStart || socket?.readyState !== WebSocket.OPEN;
@@ -223,9 +244,11 @@ function renderSession(): void {
   } else if (p.phase !== "aborted") { result.textContent = "按各客户端提交的计划推进对战。"; result.className="result"; }
 }
 createMatch.addEventListener("click", () => {
-  const payload: { playerCount: number; manualTickAdvance: boolean; seed?: number } = {playerCount:Number(element<HTMLSelectElement>("player-count").value),manualTickAdvance:element<HTMLInputElement>("manual-tick").checked};
+  const payload: { playerCount?: number; manualTickAdvance?: boolean; seed?: number | null } = {};
+  if (playerOverride) payload.playerCount = Number(element<HTMLSelectElement>("player-count").value);
+  if (manualOverride) payload.manualTickAdvance = element<HTMLInputElement>("manual-tick").checked;
   const seed = element<HTMLInputElement>("spawn-seed").value.trim();
-  if (seed !== "") payload.seed = Number(seed);
+  if (seedOverride) payload.seed = seed === "" ? null : Number(seed);
   socket?.send(JSON.stringify({type:"match.create", payload}));
 });
 demonstrate.addEventListener("click", () => {
@@ -245,8 +268,12 @@ window.addEventListener("resize", resize);
 function draw(now: number): void {
   let amount = 1;
   if (target) {
-    amount = Math.min(1, (now - animationStart) / (target.durationMs * Math.max(0.001, number(target.time) - number(current!.time))));
-    if (amount >= 1) { applyFrame(target, now); target = null; }
+    amount = Math.min(1, (now - animationStart) * target.playbackSpeed / (target.durationMs * Math.max(0.001, number(target.time) - number(current!.time))));
+    if (amount >= 1) {
+      applyFrame(target, now); target = null;
+      const next = pendingFrames.shift();
+      if (next) { startFrame(next, now); amount = target ? 0 : 1; }
+    }
   }
   context.clearRect(0, 0, viewSize, viewSize);
   if (current) {

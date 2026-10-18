@@ -11,12 +11,13 @@ namespace QQT.Server;
 /// <summary>唯一推进世界的任务。快照在锁内序列化，锁外只发送独立缓冲。</summary>
 public sealed partial class ScenarioRunner : IAsyncDisposable
 {
-    private readonly GameSimulation _world = new();
+    private readonly GameSimulation _world;
     private SimulationEvent[] _history;
     private readonly ConcurrentDictionary<int, UiPeer> _peers = new();
     private readonly SemaphoreSlim _gate = new(1, 1);
-    private readonly ScenarioOptions _options;
-    private readonly IConfiguration _configuration;
+    private readonly ServerConfiguration _configuration;
+    private ServerSettings _settings;
+    private ScenarioOptions Options => _settings.Scenario;
     private readonly SimulationLogger _log;
     private readonly ObjectPool<JsonMessageBuffer> _messages;
     private readonly CancellationToken _stopping;
@@ -27,12 +28,13 @@ public sealed partial class ScenarioRunner : IAsyncDisposable
     private string _runId = "ready", _status = "ready", _error = "";
     private ValidationResult? _result;
 
-    public ScenarioRunner(ScenarioOptions options, SimulationLogger log, ObjectPool<JsonMessageBuffer> messages, IHostApplicationLifetime lifetime, IConfiguration configuration)
+    public ScenarioRunner(SimulationLogger log, ObjectPool<JsonMessageBuffer> messages, IHostApplicationLifetime lifetime, ServerConfiguration configuration)
     {
-        _configuration = configuration; _options = options; _log = log; _messages = messages; _stopping = lifetime.ApplicationStopping;
+        _configuration = configuration; _settings = configuration.Read(); _log = log; _messages = messages; _stopping = lifetime.ApplicationStopping;
+        _world = new(_settings.Player, Options.InitialEventCapacity, _settings.PlayerCount, _settings.MaxTicks);
         // 事件量取决于速度与连锁，按实际需要扩容；初始容量不作为事件上限。
         // 本 runner 唯一持有历史数组，跨重跑复用，仅在任务和发送完成后的 DisposeAsync 归还。
-        _history = ArrayPool<SimulationEvent>.Shared.Rent(GameSimulation.InitialEventCapacity);
+        _history = ArrayPool<SimulationEvent>.Shared.Rent(Options.InitialEventCapacity);
     }
 
     public async Task<bool> StartAsync(bool paced = true)
@@ -78,9 +80,11 @@ public sealed partial class ScenarioRunner : IAsyncDisposable
     {
         try
         {
-            using var script = ScenarioScript.Load(_options.ScriptPath, _options.MaxScriptTicks);
+            var settings = _configuration.Read();
+            _settings.Dispose(); _settings = settings;
+            using var script = ScenarioScript.Load(Options.ScriptPath, Options.MaxScriptTicks, settings.PlayerCount);
             await _gate.WaitAsync(_stopping);
-            try { _world.Reset(script.PlayerCount); _totalTicks = script.TotalTicks; _scenarioName = script.Name; if (script.Initial is { } initial) _world.Configure(initial); ConfigureWorldItems(script); StoreAndLogEvents(); }
+            try { settings.ConfigureWorld(_world, script.PlayerCount, settings.Seed, script.Initial ?? settings.Initial, script.Items ?? settings.Items); _totalTicks = script.TotalTicks; _scenarioName = script.Name; StoreAndLogEvents(); }
             finally { _gate.Release(); }
             _log.Started(_runId, script.Name);
             _log.ItemsConfigured(_runId, _world);
@@ -90,7 +94,7 @@ public sealed partial class ScenarioRunner : IAsyncDisposable
             {
                 if (paced && previousStart != 0)
                 {
-                    var remaining = TimeSpan.FromMilliseconds(_options.TickIntervalMilliseconds) - Stopwatch.GetElapsedTime(previousStart);
+                    var remaining = TimeSpan.FromMilliseconds(Options.TickIntervalMilliseconds) - Stopwatch.GetElapsedTime(previousStart);
                     if (remaining > TimeSpan.Zero) await Task.Delay(remaining, _stopping);
                 }
                 previousStart = Stopwatch.GetTimestamp();
@@ -165,10 +169,10 @@ public sealed partial class ScenarioRunner : IAsyncDisposable
     }
 
     private void WriteSnapshot(Utf8JsonWriter w, bool animate) => WorldFrame.Write(w, _world, _history.AsSpan(0, _historyCount), _historyCount,
-        _runId, _status, _error, _scenarioName, _totalTicks, _result, _options.AnimationMilliseconds, animate);
+        _runId, _status, _error, _scenarioName, _totalTicks, _result, Options.AnimationMilliseconds, animate, _settings.CatchUpThreshold, _settings.PlaybackSpeed);
     public async ValueTask DisposeAsync()
     {
         if (_runTask is { } task) await task;
-        _world.Dispose(); ArrayPool<SimulationEvent>.Shared.Return(_history); _gate.Dispose();
+        _world.Dispose(); _settings.Dispose(); ArrayPool<SimulationEvent>.Shared.Return(_history); _gate.Dispose();
     }
 }

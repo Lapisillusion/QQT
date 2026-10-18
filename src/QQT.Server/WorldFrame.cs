@@ -4,12 +4,13 @@ namespace QQT.Server;
 
 internal static class WorldFrame
 {
-    public static void Write(Utf8JsonWriter w, GameSimulation _world, ReadOnlySpan<SimulationEvent> _history, int _historyCount, string _runId, string _status, string _error, string _scenarioName, int _totalTicks, ValidationResult? _result, int animationMilliseconds, bool animate)
+    public static void Write(Utf8JsonWriter w, GameSimulation _world, ReadOnlySpan<SimulationEvent> _history, int _historyCount, string _runId, string _status, string _error, string _scenarioName, int _totalTicks, ValidationResult? _result, int animationMilliseconds, bool animate, int catchUpThreshold, double playbackSpeed)
     {
         w.WriteStartObject();
         w.WriteString("type", "frame"); w.WriteString("runId", _runId); w.WriteString("status", _status);
         w.WriteString("error", _error); w.WriteString("name", _scenarioName); w.WriteNumber("totalTicks", _totalTicks); w.WriteNumber("tick", _world.Tick); w.WriteNumber("size", GameSimulation.Size);
         WriteTime(w, "time", _world.Time); w.WriteNumber("durationMs", animationMilliseconds); w.WriteBoolean("animate", animate);
+        w.WriteNumber("catchUpThreshold", catchUpThreshold); w.WriteNumber("playbackSpeed", playbackSpeed);
         w.WriteBoolean("ended", _world.Ended);
         if (_world.WinnerId is { } winner) w.WriteNumber("winnerId", winner); else w.WriteNull("winnerId");
         if (_world.EndTick is { } endedAt) WriteTime(w, "endTick", endedAt); else w.WriteNull("endTick");

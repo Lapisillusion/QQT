@@ -521,11 +521,14 @@ def main():
     harness = None
     try:
         if not args.external_server:
-            env = os.environ.copy()
-            env["Scenario__TickIntervalMilliseconds"] = str(args.tick_interval)
-            env["Urls"] = args.url.replace("ws://", "http://")
-            env["Battle__RecordDirectory"] = str(output / "server-jsonl")
-            server = subprocess.Popen(["dotnet", str(SERVER), "--battle"], cwd=ROOT, env=env, stdout=server_log, stderr=subprocess.STDOUT)
+            config = json.loads((ROOT / "src/QQT.Server/appsettings.json").read_text(encoding="utf-8-sig"))
+            config["Urls"] = args.url.replace("ws://", "http://")
+            config["Scenario"]["TickIntervalMilliseconds"] = args.tick_interval
+            config["Scenario"]["ScriptPath"] = str(ROOT / "scripts/m0.json")
+            config["Battle"]["RecordDirectory"] = str(output / "server-jsonl")
+            config_path = output / "server.config.json"
+            config_path.write_text(json.dumps(config, ensure_ascii=False, indent=2), encoding="utf-8")
+            server = subprocess.Popen(["dotnet", str(SERVER), "--battle", "--config", str(config_path)], cwd=ROOT, stdout=server_log, stderr=subprocess.STDOUT)
             # 只用于进程启动连接就绪，场景先后均通过协议屏障。
             import urllib.request
             deadline = time.monotonic() + 15

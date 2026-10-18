@@ -62,7 +62,7 @@ public sealed partial class BattleCoordinator
         w.WriteStartObject("self"); w.WriteNumber("playerId", p.Id); WorldFrame.WritePosition(w, "position", p.Position);
         w.WriteNumber("speed", p.Speed); w.WriteNumber("bubbleCapacity", p.Capacity); w.WriteNumber("activeBubbleCount", FrozenOwned(p.Id));
         w.WriteNumber("blastRange", p.Range); WorldFrame.WriteTime(w, "bubbleLifetime", p.Lifetime);
-        w.WriteNumber("visionRadius", p.Vision); w.WriteNumber("actionPoints", 10); w.WriteEndObject();
+        w.WriteNumber("visionRadius", p.Vision); w.WriteNumber("actionPoints", _budgets[p.Id - 1]); w.WriteEndObject();
         w.WriteStartArray("participantIds");
         for (int i = 0; i < _world.PlayerCount; i++) if (_frozenPlayers[i].Alive && i + 1 != p.Id && !InView(p, _frozenPlayers[i].Position)) w.WriteNumberValue(i + 1);
         w.WriteEndArray(); w.WriteStartObject("visible");
@@ -96,16 +96,16 @@ public sealed partial class BattleCoordinator
             {
                 if (targetId < 1 || targetId > _world.PlayerCount || targetId == peer.PlayerId) error = "invalidTarget";
                 else if (!_world.Players[targetId - 1].Alive) error = "targetEliminated";
-                else cost = InView(_frozenPlayers[index], _frozenPlayers[targetId - 1].Position) ? 2 : 3;
+                else cost = InView(_frozenPlayers[index], _frozenPlayers[targetId - 1].Position) ? _settings.VisiblePlayerCost : _settings.OutsidePlayerCost;
             }
             else if (targetType == "bubble")
             {
                 int queryId = 0;
                 for (int b = 0; b < _frozenBubbleCount; b++) if (InView(_frozenPlayers[index], _frozenBubbles[b].Position))
                 {
-                    queryId++; if (queryId == targetId) { bubble = _frozenBubbles[b]; cost = 1; break; }
+                    queryId++; if (queryId == targetId) { bubble = _frozenBubbles[b]; cost = _settings.BubbleCost; break; }
                 }
-                if (cost == 0) error = "invalidTarget";
+                if (bubble.Id == 0) error = "invalidTarget";
             }
             else error = "invalidTargetType";
             if (error is null && _budgets[index] < cost) error = "insufficientActionPoints";

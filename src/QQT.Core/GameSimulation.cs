@@ -8,12 +8,12 @@ public sealed partial class GameSimulation : IDisposable
 {
     public const int Size = 21;
     public const int CellCount = Size * Size;
-    public const int InitialEventCapacity = 96;
     private readonly Cell[] _terrain = ArrayPool<Cell>.Shared.Rent(CellCount);
     private readonly Player[] _players = ArrayPool<Player>.Shared.Rent(4);
     private Bubble[] _bubbles = ArrayPool<Bubble>.Shared.Rent(12);
     private Move[] _moves = ArrayPool<Move>.Shared.Rent(4);
-    private SimulationEvent[] _events = ArrayPool<SimulationEvent>.Shared.Rent(InitialEventCapacity);
+    private SimulationEvent[] _events;
+    private PlayerDefaults _defaults;
     private int _eventCount, _moveCount, _bubbleCount, _nextBubbleId, _placed, _exploded, _destroyed;
     private bool _disposed;
     private readonly Cell[] _initialTerrain = ArrayPool<Cell>.Shared.Rent(CellCount);
@@ -27,7 +27,6 @@ public sealed partial class GameSimulation : IDisposable
         public RationalTime Start;
         public bool Active, Crossed, Returning;
     }
-    public const int ExplosionRange = 1;
     public bool Ended { get; private set; }
     public int? WinnerId { get; private set; }
     public RationalTime? EndTick { get; private set; }
@@ -35,13 +34,24 @@ public sealed partial class GameSimulation : IDisposable
     public int CrateCount { get; private set; }
     public int BubbleCount => _bubbleCount;
     public ReadOnlySpan<Cell> Terrain => _terrain.AsSpan(0, CellCount);
-    public int PlayerCount { get; private set; } = 4;
+    public int PlayerCount { get; private set; }
     public ReadOnlySpan<Player> Players => _players.AsSpan(0, PlayerCount);
     public ReadOnlySpan<Bubble> Bubbles => _bubbles.AsSpan(0, _bubbleCount);
     public ReadOnlySpan<Move> Moves => _moves.AsSpan(0, _moveCount);
     public ReadOnlySpan<SimulationEvent> Events => _events.AsSpan(0, _eventCount);
 
-    public GameSimulation() => Reset();
+    public GameSimulation(PlayerDefaults defaults, int initialEventCapacity, int playerCount, int tickLimit)
+    {
+        _events = ArrayPool<SimulationEvent>.Shared.Rent(Math.Max(1, initialEventCapacity));
+        try
+        {
+            defaults.Validate();
+            if (initialEventCapacity <= 0) throw new ArgumentOutOfRangeException(nameof(initialEventCapacity));
+            if (tickLimit <= 0) throw new ArgumentOutOfRangeException(nameof(tickLimit));
+            TickLimit = tickLimit; _defaults = defaults; Reset(playerCount);
+        }
+        catch { Dispose(); throw; }
+    }
 
     public static Position Spawn(int i) => i switch
     {
@@ -61,11 +71,13 @@ public sealed partial class GameSimulation : IDisposable
         return Cell.Crate;
     }
 
-    public void Reset(int playerCount = 4, int? spawnSeed = null)
+    public void Reset(int? playerCount = null, int? spawnSeed = null, PlayerDefaults? defaults = null)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        if (playerCount is < 2 or > 4) throw new ArgumentOutOfRangeException(nameof(playerCount));
-        PlayerCount = playerCount; _executing = false;
+        int count = playerCount ?? PlayerCount;
+        if (count is < 2 or > 4) throw new ArgumentOutOfRangeException(nameof(playerCount));
+        if (defaults is { } configured) { configured.Validate(); _defaults = configured; }
+        PlayerCount = count; _executing = false;
         _tickPlans.AsSpan(0, 4).Clear(); _segments.AsSpan(0, 4).Clear();
         Time = 0;
         ResetItems();
@@ -95,7 +107,7 @@ public sealed partial class GameSimulation : IDisposable
                 }
             }
             for (int i = 0; i < PlayerCount; i++)
-                _players[i] = new Player { Id = i + 1, Position = Spawn(corners[i]), Point = ExactPosition.Center(Spawn(corners[i])), Speed = 1, Capacity = 3, Range = 1, Vision = 2, Lifetime = 3 };
+                _players[i] = new Player { Id = i + 1, Position = Spawn(corners[i]), Point = ExactPosition.Center(Spawn(corners[i])), Speed = _defaults.Speed, Capacity = _defaults.Capacity, Range = _defaults.Range, Vision = _defaults.Vision, Lifetime = _defaults.Lifetime };
         }
         finally { ArrayPool<int>.Shared.Return(corners); }
         SaveInitialTerrain();
@@ -128,8 +140,10 @@ public sealed partial class GameSimulation : IDisposable
             player.Position = ScenarioScript.ReadPosition(row.GetProperty("position"));
             if (_terrain[player.Position.Index] != Cell.Empty) throw new InvalidDataException("出生点不可位于障碍。");
             player.Point = ExactPosition.Center(player.Position);
-            player.Speed = Positive(row, "speed", 1); player.Capacity = Positive(row, "capacity", 3); player.Range = Positive(row, "range", 1); player.Vision = Positive(row, "vision", 2);
-            player.Lifetime = row.TryGetProperty("lifetime", out var life) ? RationalTime.Read(life) : 3;
+            player.Speed = Positive(row, "speed", _defaults.Speed); player.Capacity = Positive(row, "capacity", _defaults.Capacity); player.Range = Positive(row, "range", _defaults.Range);
+            player.Vision = row.TryGetProperty("vision", out var vision) ? vision.GetInt32() : _defaults.Vision;
+            if (player.Vision < 0) throw new InvalidDataException("vision 不能为负。");
+            player.Lifetime = row.TryGetProperty("lifetime", out var life) ? RationalTime.Read(life) : _defaults.Lifetime;
             if (player.Lifetime <= 0) throw new InvalidDataException("泡泡寿命必须为正。");
         }
         SaveInitialTerrain();

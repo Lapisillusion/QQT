@@ -13,7 +13,7 @@ public sealed partial class BattleCoordinator : BackgroundService
 {
     private readonly record struct Command(string Kind, BattlePeer? Peer, JsonDocument? Document, string GameId = "", int RoundId = 0);
     private readonly Channel<Command> _commands = Channel.CreateUnbounded<Command>(new UnboundedChannelOptions { SingleReader = true });
-    private readonly GameSimulation _world = new() { TickLimit = 500 };
+    private readonly GameSimulation _world;
     private readonly BattlePeer?[] _ai = ArrayPool<BattlePeer?>.Shared.Rent(4);
     private readonly PlayerObservation?[] _observations = ArrayPool<PlayerObservation?>.Shared.Rent(4);
     private readonly Player[] _frozenPlayers = ArrayPool<Player>.Shared.Rent(4);
@@ -23,10 +23,11 @@ public sealed partial class BattleCoordinator : BackgroundService
     private readonly bool[] _locked = ArrayPool<bool>.Shared.Rent(4);
     private readonly int[] _budgets = ArrayPool<int>.Shared.Rent(4);
     private readonly HashSet<BattlePeer> _uis = new();
-    private SimulationEvent[] _history = ArrayPool<SimulationEvent>.Shared.Rent(128);
+    private SimulationEvent[] _history;
     private readonly ObjectPool<JsonMessageBuffer> _messages;
-    private readonly ScenarioOptions _options;
-    private readonly IConfiguration _configuration;
+    private readonly ServerConfiguration _configuration;
+    private ServerSettings _settings;
+    private ScenarioOptions Options => _settings.Scenario;
     private readonly SimulationLogger _simulationLog;
     private readonly ILogger _log;
     private int _historyCount, _eventCursor, _frozenBubbleCount, _pendingDisconnects, _seed;
@@ -39,9 +40,14 @@ public sealed partial class BattleCoordinator : BackgroundService
     internal Func<ValueTask>? BeforeEvent { get; set; }
     internal Action<int>? DisconnectQueued { get; set; }
 
-    public BattleCoordinator(ObjectPool<JsonMessageBuffer> messages, ScenarioOptions options, IConfiguration configuration, SimulationLogger simulationLog, ILoggerFactory logs)
+    public BattleCoordinator(ObjectPool<JsonMessageBuffer> messages, ServerConfiguration configuration, SimulationLogger simulationLog, ILoggerFactory logs)
     {
-        _messages = messages; _options = options; _configuration = configuration; _simulationLog = simulationLog;
+        _messages = messages; _configuration = configuration; _simulationLog = simulationLog;
+        _settings = configuration.Read();
+        _world = new(_settings.Player, Options.InitialEventCapacity, _settings.PlayerCount, _settings.MaxTicks);
+        _history = ArrayPool<SimulationEvent>.Shared.Rent(Options.InitialEventCapacity);
+        _world.Reset(_settings.PlayerCount);
+        _manual = _settings.ManualTickAdvance;
         _log = logs.CreateLogger("QQT.Server.Battle");
         _ai.AsSpan(0, 4).Clear(); _observations.AsSpan(0, 4).Clear();
         _plans.AsSpan(0, 4).Clear(); _locked.AsSpan(0, 4).Clear(); _budgets.AsSpan(0, 4).Clear();
@@ -141,30 +147,38 @@ public sealed partial class BattleCoordinator : BackgroundService
     private void Create(JsonElement payload)
     {
         if (_phase is not ("idle" or "ended" or "aborted")) throw new InvalidDataException("请结束当前对局后再创建。");
-        int count = payload.TryGetProperty("playerCount", out var n) ? n.GetInt32() : _configuration.GetValue("Match:PlayerCount", 4);
-        if (count is < 2 or > 4) throw new InvalidDataException("playerCount 必须是 2、3 或 4。");
-        bool manual = payload.TryGetProperty("manualTickAdvance", out var m) ? m.GetBoolean() : _configuration.GetValue("Match:ManualTickAdvance", false);
-        int seed = payload.TryGetProperty("seed", out var s) ? s.GetInt32() : Random.Shared.Next();
-        // 在临时世界验证配置，失败时不破坏上一局可审阅的结果。
-        using (var candidate = new GameSimulation())
+        var settings = _configuration.Read();
+        try
         {
-            candidate.Reset(count, seed);
-            if (payload.TryGetProperty("initial", out var initial)) candidate.Configure(initial);
-            candidate.ConfigureItems(payload.TryGetProperty("items", out var items) ? items : null);
+            int count = payload.TryGetProperty("playerCount", out var n) ? n.GetInt32() : settings.PlayerCount;
+            if (count is < 2 or > 4) throw new InvalidDataException("playerCount 必须是 2、3 或 4。");
+            bool manual = payload.TryGetProperty("manualTickAdvance", out var m) ? m.GetBoolean() : settings.ManualTickAdvance;
+            int seed = payload.TryGetProperty("seed", out var s) ? s.ValueKind == JsonValueKind.Null ? Random.Shared.Next() : s.GetInt32() : settings.Seed ?? Random.Shared.Next();
+            JsonElement? initialConfig = payload.TryGetProperty("initial", out var initial) ? initial : settings.Initial;
+            JsonElement? itemsConfig = payload.TryGetProperty("items", out var items) ? items : settings.Items;
+            // 在临时世界验证配置，失败时不破坏上一局可审阅的结果。
+            using (var candidate = new GameSimulation(settings.Player, settings.Scenario.InitialEventCapacity, count, settings.MaxTicks))
+            {
+                settings.ConfigureWorld(candidate, count, seed, initialConfig, itemsConfig);
+            }
+            // 先验证记录目录与全部建局参数，再替换上一局的快照。
+            try { Directory.CreateDirectory(settings.RecordDirectory); }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            { throw new InvalidDataException($"记录目录不可用：{settings.RecordDirectory}", exception); }
+            ReleaseRound();
+            for (int i = 0; i < 4; i++) { _ai[i]?.Stop(); _ai[i] = null; }
+            _record?.Dispose(); _record = null;
+            settings.ConfigureWorld(_world, count, seed, initialConfig, itemsConfig);
+            _settings.Dispose(); _settings = settings; settings = null!;
+            _manual = manual; _seed = seed; _gameId = Guid.NewGuid().ToString("N"); _phase = "preparing"; _error = "";
+            _previousStart = 0; _pendingDisconnects = _historyCount = _eventCursor = 0; _simulationScheduled = false;
+            string directory = _settings.RecordDirectory;
+            Directory.CreateDirectory(directory);
+            _record = new StreamWriter(Path.Combine(directory, _gameId + ".jsonl"), false, new UTF8Encoding(false)) { AutoFlush = true };
+            Record(payload, "initialConfiguration"); RecordConfiguration(); StoreEvents();
+            LogCreated(_log, _gameId, count, manual, seed);
         }
-        ReleaseRound();
-        for (int i = 0; i < 4; i++) { _ai[i]?.Stop(); _ai[i] = null; }
-        _record?.Dispose(); _record = null;
-        _world.Reset(count, seed); _world.TickLimit = 500;
-        if (payload.TryGetProperty("initial", out var environment)) _world.Configure(environment);
-        _world.ConfigureItems(payload.TryGetProperty("items", out var itemConfig) ? itemConfig : null);
-        _manual = manual; _seed = seed; _gameId = Guid.NewGuid().ToString("N"); _phase = "preparing"; _error = "";
-        _previousStart = 0; _pendingDisconnects = _historyCount = _eventCursor = 0; _simulationScheduled = false;
-        string directory = _configuration["Battle:RecordDirectory"] ?? Path.Combine(Directory.GetCurrentDirectory(), "artifacts", "battle");
-        Directory.CreateDirectory(directory);
-        _record = new StreamWriter(Path.Combine(directory, _gameId + ".jsonl"), false, new UTF8Encoding(false)) { AutoFlush = true };
-        Record(payload, "initialConfiguration"); RecordConfiguration(); StoreEvents();
-        LogCreated(_log, _gameId, count, manual, seed);
+        finally { settings?.Dispose(); }
     }
 
     private void Register(BattlePeer peer, JsonElement root)
@@ -182,7 +196,7 @@ public sealed partial class BattleCoordinator : BackgroundService
         Record(root, "request", peer.PlayerId);
         var message = Begin("register.result", root);
         var w = message.Writer; w.WriteBoolean("success", error is null);
-        if (error is null) { w.WriteNumber("playerId", peer.PlayerId); w.WriteNumber("playerCount", _world.PlayerCount); }
+        if (error is null) { w.WriteNumber("playerId", peer.PlayerId); w.WriteNumber("playerCount", _world.PlayerCount); _settings.WriteRules(w); }
         WriteError(w, error, error is null ? null : "登记失败。"); End(peer, message);
         if (error is null) { LogRegistered(_log, _gameId, peer.PlayerId); PublishState(); }
     }
@@ -201,7 +215,7 @@ public sealed partial class BattleCoordinator : BackgroundService
         _phase = "collecting"; _simulationScheduled = false;
         for (int i = 0; i < _world.PlayerCount; i++)
         {
-            _budgets[i] = 10; _locked[i] = false; _plans[i] = new(i + 1, Direction.Wait, null);
+            _budgets[i] = _settings.ActionPoints; _locked[i] = false; _plans[i] = new(i + 1, Direction.Wait, null);
             if (!_world.Players[i].Alive) continue;
             _observations[i] = _world.Observe(i + 1);
             if (_ai[i] is { } peer) SendObservation(peer, _observations[i]!);
@@ -219,7 +233,7 @@ public sealed partial class BattleCoordinator : BackgroundService
     {
         if (_phase != "collecting" || _simulationScheduled || !AllLocked()) return;
         _simulationScheduled = true;
-        var remaining = _previousStart == 0 ? TimeSpan.Zero : TimeSpan.FromMilliseconds(_options.TickIntervalMilliseconds) - Stopwatch.GetElapsedTime(_previousStart);
+        var remaining = _previousStart == 0 ? TimeSpan.Zero : TimeSpan.FromMilliseconds(Options.TickIntervalMilliseconds) - Stopwatch.GetElapsedTime(_previousStart);
         if (remaining <= TimeSpan.Zero) _commands.Writer.TryWrite(new("simulate", null, null, _gameId, _world.Tick + 1));
         else _ = WakeAsync(_gameId, _world.Tick + 1, remaining, StoppingToken);
     }
@@ -307,7 +321,7 @@ public sealed partial class BattleCoordinator : BackgroundService
         {
             var message = Begin("match.ended"); var w = message.Writer;
             if (_world.WinnerId is { } winner) w.WriteNumber("winnerId", winner); else w.WriteNull("winnerId");
-            WorldFrame.WriteTime(w, "time", _world.Time); w.WriteString("reason", _world.Tick >= 500 && survivors > 1 ? "tickLimit" : "elimination"); End(peer, message);
+            WorldFrame.WriteTime(w, "time", _world.Time); w.WriteString("reason", _world.Tick >= _settings.MaxTicks && survivors > 1 ? "tickLimit" : "elimination"); End(peer, message);
         }
         for (int i = 0; i < _world.PlayerCount; i++) _ai[i]?.Complete();
         ReleaseRound();
@@ -332,7 +346,7 @@ public sealed partial class BattleCoordinator : BackgroundService
         var message = _messages.Get();
         try
         {
-            WorldFrame.Write(message.Writer, _world, _history.AsSpan(0, _historyCount), _historyCount, _gameId, _phase is "ended" ? "ended" : _phase is "aborted" ? "error" : "running", _error, "联机对战", 500, null, _options.AnimationMilliseconds, animate);
+            WorldFrame.Write(message.Writer, _world, _history.AsSpan(0, _historyCount), _historyCount, _gameId, _phase is "ended" ? "ended" : _phase is "aborted" ? "error" : "running", _error, "联机对战", _settings.MaxTicks, null, Options.AnimationMilliseconds, animate, _settings.CatchUpThreshold, _settings.PlaybackSpeed);
             Record(message.Written, "uiFrame");
         }
         catch { _messages.Return(message); throw; }
@@ -346,6 +360,8 @@ public sealed partial class BattleCoordinator : BackgroundService
         w.WriteBoolean("manualTickAdvance", _manual); w.WriteNumber("seed", _seed); w.WriteNumber("nextRoundId", _world.Tick + 1);
         w.WriteBoolean("canStart", _phase == "preparing" && RegisteredCount() == _world.PlayerCount);
         w.WriteBoolean("canDemonstrate", _manual && _phase == "awaitingTick");
+        w.WriteStartObject("defaults"); w.WriteNumber("playerCount", _settings.PlayerCount); w.WriteBoolean("manualTickAdvance", _settings.ManualTickAdvance);
+        if (_settings.Seed is { } configuredSeed) w.WriteNumber("seed", configuredSeed); else w.WriteNull("seed"); w.WriteEndObject();
         w.WriteStartArray("waitingPlayerIds");
         for (int i = 0; i < _world.PlayerCount; i++) if (_phase == "collecting" && _world.Players[i].Alive && !_locked[i]) w.WriteNumberValue(i + 1);
         w.WriteEndArray(); End(peer, message);
@@ -358,7 +374,7 @@ public sealed partial class BattleCoordinator : BackgroundService
             var w = message.Writer; w.WriteStartObject(); w.WriteNumber("playerCount", _world.PlayerCount);
             w.WriteBoolean("manualTickAdvance", _manual); w.WriteNumber("seed", _seed); w.WriteStartArray("spawns");
             foreach (var p in _world.Players) { w.WriteStartObject(); w.WriteNumber("playerId", p.Id); WorldFrame.WritePosition(w, "position", p.Position); w.WriteEndObject(); }
-            w.WriteEndArray(); w.WriteEndObject(); w.Flush(); Record(message.Written, "configuration");
+            w.WriteEndArray(); w.WriteString("configPath", _configuration.Path); _settings.WriteSnapshot(w); w.WriteEndObject(); w.Flush(); Record(message.Written, "configuration");
         }
         finally { _messages.Return(message); }
     }
@@ -393,7 +409,7 @@ public sealed partial class BattleCoordinator : BackgroundService
     public override void Dispose()
     {
         if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
-        base.Dispose(); _world.Dispose();
+        base.Dispose(); _world.Dispose(); _settings.Dispose();
         ArrayPool<BattlePeer?>.Shared.Return(_ai, true); ArrayPool<PlayerObservation?>.Shared.Return(_observations, true);
         ArrayPool<Player>.Shared.Return(_frozenPlayers); ArrayPool<Bubble>.Shared.Return(_frozenBubbles);
         ArrayPool<PlayerAction>.Shared.Return(_plans, true); ArrayPool<Position>.Shared.Return(_placements);

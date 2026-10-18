@@ -5,8 +5,8 @@ static partial class Program
     // 脚本能验证内容，但不能持有旧观察跨 Advance/Reset；只为这一所有权风险增加必要检查。
     private static void CheckItemObservationLifetime(string path)
     {
-        using var script = ScenarioScript.Load(path, 128);
-        using var world = new GameSimulation();
+        using var script = ScenarioScript.Load(path, 128, 4);
+        using var world = new GameSimulation(new(1, 3, 1, 2, 3), 96, 4, int.MaxValue);
         world.Configure(script.Initial!.Value); world.ConfigureItems(script.Items); world.PrepareRound();
         using var before = world.Observe(1);
         Require(before.Cells.Length == 25 && before.Self.Vision == 2 && before.Items.Length == 0, "初始观察必须是隐藏道具的 5×5。");
